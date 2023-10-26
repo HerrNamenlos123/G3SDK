@@ -1,0 +1,14 @@
+{
+  "APPLIED_MIGRATIONS" : [ "java.util.HashSet", [ [ "java.lang.Long", 20180408115202910 ], [ "java.lang.Long", 20211114125410561 ] ] ],
+  "EditorOptions.Language.UI_LANGUAGE" : [ "de.george.g3dit.Editor$UiLanguage", "EN" ],
+  "EditorOptions.MainMenu.RECENT_FILES" : [ "java.util.ArrayList", [ "C:\\Users\\zachs\\Downloads\\Templates\\NPC\\Varant\\AlShedim_Excavation_Cronos.tple", "C:\\Users\\zachs\\Downloads\\Templates\\Skills\\Skills_Passive\\Skills_Passive_ALC_Perk_PoisonBlade.tple", "C:\\Users\\zachs\\Downloads\\Templates\\NPC\\Myrtana\\Ardea_City_Hamlar.tple" ] ],
+  "EditorOptions.MainWindow.EXTENDED_STATE" : 0,
+  "EditorOptions.MainWindow.LOCATION" : [ "java.awt.Point", {
+    "x" : 89.0,
+    "y" : 649.0
+  } ],
+  "EditorOptions.MainWindow.SIZE" : [ "java.awt.Dimension", {
+    "width" : 1040.0,
+    "height" : 500.0
+  } ]
+}

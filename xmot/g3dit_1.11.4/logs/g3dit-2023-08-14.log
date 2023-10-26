@@ -1,0 +1,144 @@
+2023-08-14 19:18:34,769 [main] INFO  u.o.l.s.context.SysOutOverSLF4J (SysOutOverSLF4J.java:124) Redirected System.out and System.err to SLF4J for this context
+2023-08-14 19:18:35,389 [main] INFO  d.g.g.settings.OptionStoreMigrator (OptionStoreMigrator.java:48) Applying migration 'V20180408115202910__Recent_Files_List'.
+2023-08-14 19:18:35,390 [main] INFO  d.g.g.settings.OptionStoreMigrator (OptionStoreMigrator.java:48) Applying migration 'V20211114125410561__Keep_Previous_UI_Lang'.
+2023-08-14 19:18:35,868 [Thread-1] INFO  c.t.k.windows.WindowsProvider (WindowsProvider.java:55) Starting Windows global hotkey provider
+2023-08-14 19:18:36,230 [Thread-1] INFO  c.t.k.windows.WindowsProvider (WindowsProvider.java:107) Registering hotkey: HotKey{shift ctrl A}
+2023-08-14 19:18:36,584 [pool-1-thread-3] WARN  d.g.g3dit.cache.StringtableCache (StringtableCache.java:76) Unable to locate stringtable.
+2023-08-14 19:18:37,003 [pool-1-thread-1] WARN  d.g.g3dit.cache.StringtableCache (StringtableCache.java:76) Unable to locate stringtable.
+2023-08-14 19:18:37,069 [AWT-EventQueue-0] INFO  de.george.g3dit.cache.NavCache (NavCache.java:87) NavCache Ladefehler: Cache file is invalid! Please recreate the cache.
+2023-08-14 19:18:37,073 [AWT-EventQueue-0] INFO  de.george.g3dit.cache.TemplateCache (TemplateCache.java:111) Failed to load TemplateCache: Cache file is invalid! Please recreate the cache.
+2023-08-14 19:18:37,078 [AWT-EventQueue-0] INFO  de.george.g3dit.cache.EntityCache (EntityCache.java:114) Failed to load EntityCache: Cache file is invalid! Please recreate the cache.
+2023-08-14 19:19:18,767 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 15 - InnerSlot: 0) (4318, Ardea_City_Hamlar.tple)
+2023-08-14 19:19:18,768 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 16 - InnerSlot: 0) (4407, Ardea_City_Hamlar.tple)
+2023-08-14 19:19:18,768 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 17 - InnerSlot: 0) (4496, Ardea_City_Hamlar.tple)
+2023-08-14 19:19:18,818 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) unregisterKeyStrokes
+2023-08-14 19:19:18,820 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) registerKeyStrokes
+2023-08-14 19:20:00,907 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.ogre.MeshLoader
+2023-08-14 19:20:00,908 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.ogre.SkeletonLoader
+2023-08-14 19:20:00,908 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.ogre.MaterialLoader
+2023-08-14 19:20:00,908 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.ogre.SceneLoader
+2023-08-14 19:20:00,909 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.fbx.FbxLoader
+2023-08-14 19:20:00,910 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.gltf.GltfLoader
+2023-08-14 19:20:00,910 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.gltf.BinLoader
+2023-08-14 19:20:00,910 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.scene.plugins.gltf.GlbLoader
+2023-08-14 19:20:00,911 [AWT-EventQueue-0] WARN  com.jme3.asset.AssetConfig (AssetConfig.java:91) Cannot find loader com.jme3.audio.plugins.OGGLoader
+2023-08-14 19:20:01,611 [jME3 Main] ERROR org.lwjgl.system.ThreadLocalUtil (Level.java:229) [LWJGL] [ThreadLocalUtil] Unsupported JNI version detected, this may result in a crash. Please inform LWJGL developers.
+2023-08-14 19:20:01,731 [jME3 Main] WARN  com.jme3.renderer.opengl.GLRenderer (GLRenderer.java:3239) Driver claims that default framebuffer is not sRGB capable. Enabling anyway.
+2023-08-14 19:20:02,011 [jME3 Main] ERROR com.jme3.app.AppTask (AppTask.java:159) Exception
+com.jme3.asset.AssetNotFoundException: G3_Hero_Skeleton.xact[0]
+	at com.jme3.asset.DesktopAssetManager.loadAsset(DesktopAssetManager.java:385)
+	at com.jme3.asset.DesktopAssetManager.loadModel(DesktopAssetManager.java:439)
+	at de.george.g3dit.jme.EditorAwareApplication.loadModel(EditorAwareApplication.java:87)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$addMesh$1(BaseEntityViewer.java:103)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$appTask$3(BaseEntityViewer.java:118)
+	at com.jme3.app.AppTask.invoke(AppTask.java:147)
+	at com.jme3.app.LegacyApplication.runQueuedTasks(LegacyApplication.java:750)
+	at com.jme3.app.LegacyApplication.update(LegacyApplication.java:765)
+	at com.jme3.app.SimpleApplication.update(SimpleApplication.java:247)
+	at de.george.g3dit.jme.EditorAwareApplication.update(EditorAwareApplication.java:123)
+	at de.george.g3dit.jme.MyAwtPanelsContext.updateInThread(MyAwtPanelsContext.java:192)
+	at de.george.g3dit.jme.MyAwtPanelsContext.access$100(MyAwtPanelsContext.java:23)
+	at de.george.g3dit.jme.MyAwtPanelsContext$MyAwtPanelsListener.update(MyAwtPanelsContext.java:50)
+	at com.jme3.system.lwjgl.LwjglWindow.runLoop(LwjglWindow.java:537)
+	at com.jme3.system.lwjgl.LwjglWindow.run(LwjglWindow.java:626)
+	at com.jme3.system.lwjgl.LwjglWindow.create(LwjglWindow.java:473)
+	at de.george.g3dit.jme.MyAwtPanelsContext.create(MyAwtPanelsContext.java:220)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:491)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:443)
+	at com.jme3.app.SimpleApplication.start(SimpleApplication.java:126)
+	at de.george.g3dit.jme.JmeAppFrame.lambda$startApp$0(JmeAppFrame.java:88)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1589)
+2023-08-14 19:20:33,940 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Databases - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,940 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Projects - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,943 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: EntityLayers - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,944 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: GeometryLayers - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,944 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: World - bTPOSmartPtr<class gCWorld>
+2023-08-14 19:20:33,945 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: LogText - bTObjArray<struct gCQuest_PS::SLogEntry>
+2023-08-14 19:20:33,946 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Workspace - bTPOSmartPtr<class gCWorkspace>
+2023-08-14 19:20:33,946 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Worlds - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,953 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: SectorPtr - bTPOSmartPtr<class gCSector>
+2023-08-14 19:20:33,956 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: InfoScriptLines - bTObjArray<class bTAutoPOSmartPtr<class gCInfoScriptLine_PS> >
+2023-08-14 19:20:33,960 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: TemplateLayers - bTRefPtrArray<class bCPropertyObjectBase *>
+2023-08-14 19:20:33,961 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Workspace - bTPOSmartPtr<class gCWorkspace>
+2023-08-14 19:20:33,974 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: Images - bTRefPtrArray<class eCResourceDataEntity *>
+2023-08-14 19:20:33,974 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: ConditionValueProperty - eCPropertyProxy
+2023-08-14 19:20:33,974 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: PropertyValue - eCPropertyProxy
+2023-08-14 19:20:33,974 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: PropertyValueLowerBound - eCPropertyProxy
+2023-08-14 19:20:33,974 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: PropertyValueUpperBound - eCPropertyProxy
+2023-08-14 19:20:33,976 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: TargetEntityProperty - eCPropertyProxy
+2023-08-14 19:20:33,976 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: TargetProperty - eCPropertyProxy
+2023-08-14 19:20:33,978 [AWT-EventQueue-0] INFO  d.g.l.p.PropertyInstantiator (PropertyInstantiator.java:94) Unknown Property: PropertyLogic - bTObjArray<class bTAutoPOSmartPtr<class eCPropertyLogic> >
+2023-08-14 19:22:41,550 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 15 - InnerSlot: 0) (4318, Ardea_City_Hamlar.tple)
+2023-08-14 19:22:41,551 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 16 - InnerSlot: 0) (4407, Ardea_City_Hamlar.tple)
+2023-08-14 19:22:41,551 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 17 - InnerSlot: 0) (4496, Ardea_City_Hamlar.tple)
+2023-08-14 19:22:41,556 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) unregisterKeyStrokes
+2023-08-14 19:22:41,556 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) registerKeyStrokes
+2023-08-14 19:24:06,487 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) unregisterKeyStrokes
+2023-08-14 19:24:06,488 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) registerKeyStrokes
+2023-08-14 21:58:52,222 [jME3 Main] ERROR com.jme3.app.AppTask (AppTask.java:159) Exception
+com.jme3.asset.AssetNotFoundException: G3_Hero_Skeleton.xact[0]
+	at com.jme3.asset.DesktopAssetManager.loadAsset(DesktopAssetManager.java:385)
+	at com.jme3.asset.DesktopAssetManager.loadModel(DesktopAssetManager.java:439)
+	at de.george.g3dit.jme.EditorAwareApplication.loadModel(EditorAwareApplication.java:87)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$addMesh$1(BaseEntityViewer.java:103)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$appTask$3(BaseEntityViewer.java:118)
+	at com.jme3.app.AppTask.invoke(AppTask.java:147)
+	at com.jme3.app.LegacyApplication.runQueuedTasks(LegacyApplication.java:750)
+	at com.jme3.app.LegacyApplication.update(LegacyApplication.java:765)
+	at com.jme3.app.SimpleApplication.update(SimpleApplication.java:247)
+	at de.george.g3dit.jme.EditorAwareApplication.update(EditorAwareApplication.java:123)
+	at de.george.g3dit.jme.MyAwtPanelsContext.updateInThread(MyAwtPanelsContext.java:192)
+	at de.george.g3dit.jme.MyAwtPanelsContext.access$100(MyAwtPanelsContext.java:23)
+	at de.george.g3dit.jme.MyAwtPanelsContext$MyAwtPanelsListener.update(MyAwtPanelsContext.java:50)
+	at com.jme3.system.lwjgl.LwjglWindow.runLoop(LwjglWindow.java:537)
+	at com.jme3.system.lwjgl.LwjglWindow.run(LwjglWindow.java:626)
+	at com.jme3.system.lwjgl.LwjglWindow.create(LwjglWindow.java:473)
+	at de.george.g3dit.jme.MyAwtPanelsContext.create(MyAwtPanelsContext.java:220)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:491)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:443)
+	at com.jme3.app.SimpleApplication.start(SimpleApplication.java:126)
+	at de.george.g3dit.jme.JmeAppFrame.lambda$startApp$0(JmeAppFrame.java:88)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1589)
+2023-08-14 21:59:07,666 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 16 - InnerSlot: 0) (4722, AlShedim_Excavation_Cronos.tple)
+2023-08-14 21:59:07,667 [AWT-EventQueue-0] INFO  d.g.lrentnode.classes.gCInventory_PS (G3FileReader.java:261) Possible Slot Error (OuterSlot: 17 - InnerSlot: 0) (4811, AlShedim_Excavation_Cronos.tple)
+2023-08-14 21:59:07,671 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) unregisterKeyStrokes
+2023-08-14 21:59:07,672 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) registerKeyStrokes
+2023-08-14 21:59:09,226 [jME3 Main] ERROR com.jme3.app.AppTask (AppTask.java:159) Exception
+com.jme3.asset.AssetNotFoundException: G3_Hero_Skeleton.xact[0]
+	at com.jme3.asset.DesktopAssetManager.loadAsset(DesktopAssetManager.java:385)
+	at com.jme3.asset.DesktopAssetManager.loadModel(DesktopAssetManager.java:439)
+	at de.george.g3dit.jme.EditorAwareApplication.loadModel(EditorAwareApplication.java:87)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$addMesh$1(BaseEntityViewer.java:103)
+	at de.george.g3dit.jme.BaseEntityViewer.lambda$appTask$3(BaseEntityViewer.java:118)
+	at com.jme3.app.AppTask.invoke(AppTask.java:147)
+	at com.jme3.app.LegacyApplication.runQueuedTasks(LegacyApplication.java:750)
+	at com.jme3.app.LegacyApplication.update(LegacyApplication.java:765)
+	at com.jme3.app.SimpleApplication.update(SimpleApplication.java:247)
+	at de.george.g3dit.jme.EditorAwareApplication.update(EditorAwareApplication.java:123)
+	at de.george.g3dit.jme.MyAwtPanelsContext.updateInThread(MyAwtPanelsContext.java:192)
+	at de.george.g3dit.jme.MyAwtPanelsContext.access$100(MyAwtPanelsContext.java:23)
+	at de.george.g3dit.jme.MyAwtPanelsContext$MyAwtPanelsListener.update(MyAwtPanelsContext.java:50)
+	at com.jme3.system.lwjgl.LwjglWindow.runLoop(LwjglWindow.java:537)
+	at com.jme3.system.lwjgl.LwjglWindow.run(LwjglWindow.java:626)
+	at com.jme3.system.lwjgl.LwjglWindow.create(LwjglWindow.java:473)
+	at de.george.g3dit.jme.MyAwtPanelsContext.create(MyAwtPanelsContext.java:220)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:491)
+	at com.jme3.app.LegacyApplication.start(LegacyApplication.java:443)
+	at com.jme3.app.SimpleApplication.start(SimpleApplication.java:126)
+	at de.george.g3dit.jme.JmeAppFrame.lambda$startApp$0(JmeAppFrame.java:88)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1589)
+2023-08-14 21:59:26,742 [AWT-EventQueue-0] INFO  d.g.g.t.t.views.header.AllgemeinTab (Level.java:128) unregisterKeyStrokes
+2023-08-14 21:59:27,055 [Thread-1] INFO  c.t.k.windows.WindowsProvider (WindowsProvider.java:72) Reset hotkeys
+2023-08-14 21:59:27,359 [Thread-1] INFO  c.t.k.windows.WindowsProvider (WindowsProvider.java:95) Exit listening thread
