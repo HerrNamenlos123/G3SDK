@@ -8,8 +8,8 @@ os.system("cls")
 # See: https://forum.xentax.com/viewtopic.php?t=9369
 
 # xmot = "dragon2/Dragon_Stand_None_Cast_P0_Cast_Raise_N_Fwd_00_%_00_P0_0.xmot"
-xmot = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
-# xmot = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
+# xmot = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
+xmot = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
 
 outdir = "C:\Program Files (x86)\Steam\steamapps\common\Gothic 3\Data\_compiledAnimation"
 out = [
@@ -62,17 +62,8 @@ class FileFormat:
         # self.def_padding(0x1BC - 24, "front_padding")
         self.def_padding(49, "front_padding")
 
-        self.def_obj("obj1")
-        self.def_obj("obj2")
-        self.def_obj("obj3")
-        self.def_obj("obj4")
-        self.def_obj("obj5")
-
-        self.def_obj("obj6")
-
-        self.def_obj("obj7")
-        self.def_obj("obj8")
-        self.def_obj("obj9")
+        for i in range(1, 90):
+            self.def_obj(f"obj_{i}")
 
         # self.def_obj("ik1")
 
@@ -102,6 +93,9 @@ class FileFormat:
 
     def __str__(self):
         return self.attr.__str__()
+    
+    def get(self, member_name):
+        return getattr(self.attr, member_name)
     
     def def_object_type(self, member_name):
         return self.def_enum_int(SomeMotionTypeEnum, f"{member_name}_type")
@@ -145,12 +139,15 @@ class FileFormat:
             self.def_int(f"{member_name}_frame_count")
             self.def_string(2, f"{member_name}_ll")
             self.def_padding(2, f"{member_name}_ll_padding")
-            self.def_float_matrix(getattr(self.attr, f"{member_name}_frame_count"), 4, f"{member_name}_frame_matrix")
 
-            if (getattr(self.attr, f"{member_name}_ll") == b"LR" ):
-                self.def_float_matrix(16, 4, f"{member_name}_second_matrix")
-                self.def_padding(40, f"{member_name}_second_padding")
-                self.def_label(member_name)
+            if (self.get(f"{member_name}_ll") == b"LR" ):
+                self.def_float_matrix(self.get(f"{member_name}_frame_count"), 5, f"{member_name}_frame_matrix")
+            else:
+                self.def_float_matrix(self.get(f"{member_name}_frame_count"), 4, f"{member_name}_frame_matrix")
+                
+                # self.def_float_matrix(16, 4, f"{member_name}_second_matrix")
+                # self.def_padding(40, f"{member_name}_second_padding")
+                # self.def_label(member_name)
 
             # self.def_obj(f"{member_name}_sub1")
             # self.def_obj(f"{member_name}_sub2")
