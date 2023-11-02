@@ -4,13 +4,6 @@ import io
 
 os.system("cls")
 
-# outdir = "C:\Program Files (x86)\Steam\steamapps\common\Gothic 3\Data\_compiledAnimation"
-# out = [
-#     "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_00_%_02_P0_0.xmot",
-#     "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_01_%_00_P0_0.xmot",
-#     "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_02_%_00_P0_0.xmot",
-# ]
-
 # def write_file(self, filename):
 #     with io.open(filename, "wb") as f:
 #         f.write(self.stream)
@@ -26,4 +19,17 @@ print(data)
 
 result = x.encode(data)
 
-print(result)
+
+
+
+
+outdir = "C:\Program Files (x86)\Steam\steamapps\common\Gothic 3\Data\_compiledAnimation"
+out_files = [
+    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_00_%_02_P0_0.xmot",
+    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_01_%_00_P0_0.xmot",
+    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_02_%_00_P0_0.xmot",
+]
+
+for file in out_files:
+    with io.open(os.path.join(outdir, file), "wb") as f:
+        f.write(result)
