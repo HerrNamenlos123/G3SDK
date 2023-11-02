@@ -1,25 +1,11 @@
-import io
-import os
 import json
+import io
 import struct
 from enum import Enum
 
-os.system("cls")
+# See: https://web.archive.org/web/20230513172524/https://forum.xentax.com/viewtopic.php?t=9369
 
-# See: https://forum.xentax.com/viewtopic.php?t=9369
-
-# xmot_file = "dragon2/Dragon_Stand_None_Cast_P0_Cast_Raise_N_Fwd_00_%_00_P0_0.xmot"
-# xmot_file = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
-xmot_file = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
-
-outdir = "C:\Program Files (x86)\Steam\steamapps\common\Gothic 3\Data\_compiledAnimation"
-out = [
-    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_00_%_02_P0_0.xmot",
-    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_01_%_00_P0_0.xmot",
-    "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_02_%_00_P0_0.xmot",
-]
-
-class SomeMotionTypeEnum(Enum):
+class AnimationType(Enum):
     ANIMATION_VECTORS = 1
     ANIMATION_FRAMES = 2
     DEADBEEF = 0xdeadbeef
@@ -38,7 +24,7 @@ class AssetEncoder(json.JSONEncoder):
 
 # This is a very sophisticated architecture:
 # The operate function defines which datatype comes when. The key is
-# that this function can encode and decode at the same time. This means,
+# that this function can encode and do_decode at the same time. This means,
 # you write the definitions once (which datatype, how many bytes, which variable name) (THE VARIABLE NAMES MUST NOT COLLIDE!!!!)
 # And then the file is decoded, modified and re-encoded using the same function.
 # Additionally, the validity of the algorithm is always checked and you should
@@ -46,59 +32,102 @@ class AssetEncoder(json.JSONEncoder):
 # not being the same as the original file.
 
 class XMot:
-    def __init__(self):
-        self.decode = True     # True for reading the file, False for writing
+    def __init__(self, filename):
+
+        self.do_decode = True     # True for decoding, False for encoding
+        self.is_decoded = False
         
-        self.raw_file = b""
+        with io.open(filename, "rb") as file:
+            self.raw_file = file.read()
+
         self.stream = b""
 
         # This object contains all parameters of the file
-        self.root = Asset()
-        self.root.assets = []
+        self.data = Asset()
+        self.data.assets = []
+# def do_decode(filename):
+#     obj = original.__dict__
+
+#     # Remove all data that is not relevant for editing the file
+#     del obj["deadbeef"]
+
+#     return json.dumps(obj, indent=4, cls=AssetEncoder)
+
+# def to_file_encodable_json(original):
+#     obj = json.loads(original)
+
+#     # Add all constant data that is only for file encoding
+#     obj["deadbeef"] = 0xDEADBEEF
+
+#     return obj
+
+
+    def decode(self):
+        if self.is_decoded:
+            raise Exception("You can only decode a file once")
+        
+        self.do_decode = True
+        self.operate()
+        self.do_decode = False
+        self.operate()
+        assert self.raw_file == self.stream     # Always assert that the conversion is lossless in both directions
+
+        # Now remove all data that is not relevant for editing
+        data = self.data.__dict__
+        # del data.deadbeef
+
+        return json.dumps(data, indent=4, cls=AssetEncoder)
+    
+    def encode(self, data):
+        if not self.is_decoded:
+            raise Exception("You must decode a file at least once before encoding it")
+        
+        # Now load the json string and restore all data relevant for encoding
+        self.data = json.loads(data)
+        # self.data.deadbeef = 0xDEADBEEF
+
+        print(self.data)
+        
+        self.do_decode = False
+        self.operate()
+        return self.stream
 
     def operate(self):
-        if self.decode:
+        if self.do_decode:
             self.stream = self.raw_file
         else:
             self.stream = b""
 
         # Start operating on the encoding
 
-        self.def_string(self.root, "genom_header", 8)
-        self.def_padding(self.root, "front_padding", 49)
+        self.def_string(self.data, "genom_header", 8)
+        self.def_padding(self.data, "front_padding", 49)
 
-        if self.decode:
+        if self.do_decode:
             i = 1
             while True:
-                self.root.assets.append(Asset())
-                type = self.def_asset(self.root.assets[-1])
-                if type == SomeMotionTypeEnum.DEADBEEF:  # Check if we reached the end
-                    self.root.assets.pop()
+                self.data.assets.append(Asset())
+                type = self.def_asset(self.data.assets[-1])
+                if type == AnimationType.DEADBEEF:  # Check if we reached the end
+                    self.data.assets.pop()
                     break
                 i += 1
         else:
-            for asset in self.root.assets:
+            for asset in self.data.assets:
                 self.def_asset(asset)
 
-        self.def_enum_int(self.root, "deadbeef", SomeMotionTypeEnum)
-        self.def_int(self.root, "deadbeef_int")
-        self.def_padding(self.root, "deadbeef_end_padding", 1)
+        self.def_enum_int(self.data, "deadbeef", AnimationType)
+        self.def_int(self.data, "deadbeef_int")
+        self.def_padding(self.data, "deadbeef_end_padding", 1)
 
-        self.def_padding(self.root, "unparsed_data", len(self.stream))
-    
-    def modify(self):
-        # Modify the file here
-        print(self)
-        pass
-
-    def __str__(self):
-        return json.dumps(self.root, indent=4, cls=AssetEncoder)
+        self.def_padding(self.data, "unparsed_data", len(self.stream))
+        self.is_decoded = True # If it was decoded at least once
     
     def peek_object_type(self, target):
-        return self.peek_enum_int(target, "type", SomeMotionTypeEnum)
+        return self.peek_enum_int(target, "type", AnimationType)
     
     def def_object_type(self, target):
-        return self.def_enum_int(target, "type", SomeMotionTypeEnum)
+        return self.def_enum_int(target, "type", AnimationType)
 
     def def_label(self, target):
         self.def_int(target, "label_length")
@@ -131,13 +160,13 @@ class XMot:
 
     def def_asset(self, target):
         object_type = self.peek_object_type(target)
-        if object_type == SomeMotionTypeEnum.ANIMATION_VECTORS:
+        if object_type == AnimationType.ANIMATION_VECTORS:
             self.def_object_type(target)
             self.def_three_vector_asset(target)
-        elif object_type == SomeMotionTypeEnum.ANIMATION_FRAMES:
+        elif object_type == AnimationType.ANIMATION_FRAMES:
             self.def_object_type(target)
             self.def_frame_asset(target)
-        elif self.decode and object_type == SomeMotionTypeEnum.DEADBEEF: # This deadbeef branch will only be encountered when decoding
+        elif self.do_decode and object_type == AnimationType.DEADBEEF: # This deadbeef branch will only be encountered when decoding
             pass
         else:
             raise Exception(f"Unknown type {object_type}")
@@ -145,35 +174,35 @@ class XMot:
         return object_type
 
     def def_padding(self, target, member_name, bytes):
-        if self.decode:                                 # Remove and remember said number of bytes
+        if self.do_decode:                                 # Remove and remember said number of bytes
             setattr(target, member_name, self.stream[:bytes])
             self.stream = self.stream[bytes:]
         else:                                           # Put them back into place
             self.stream = self.stream + getattr(target, member_name)
             
     def def_string(self, target, member_name, num_characters):
-        if self.decode:                                 # Read the string
+        if self.do_decode:                                 # Read the string
             setattr(target, member_name, self.stream[:num_characters].decode("utf-8"))
             self.stream = self.stream[num_characters:]
         else:                                           # Write the string
             self.stream = self.stream + getattr(target, member_name).encode("utf-8")
 
     def def_int(self, target, member_name):
-        if self.decode:                                 # Read the int
+        if self.do_decode:                                 # Read the int
             setattr(target, member_name, struct.unpack('<i', self.stream[:4])[0])
             self.stream = self.stream[4:]
         else:                                           # Write the int
             self.stream = self.stream + struct.pack('<i', getattr(target, member_name))
 
     def peek_enum_int(self, target, member_name, enum):
-        if self.decode:
+        if self.do_decode:
             int = struct.unpack('<I', self.stream[:4])[0]
             return enum(int)
         else:
             return enum[getattr(target, member_name)]
 
     def def_enum_int(self, target, member_name, enum):
-        if self.decode:                                 # Read the unsigned enum int
+        if self.do_decode:                                 # Read the unsigned enum int
             int = struct.unpack('<I', self.stream[:4])[0]
             setattr(target, member_name, enum(int).name)
             self.stream = self.stream[4:]
@@ -184,14 +213,14 @@ class XMot:
             return enum[string]
 
     def def_float(self, target, member_name):
-        if self.decode:                                 # Read the float
+        if self.do_decode:                                 # Read the float
             setattr(target, member_name, struct.unpack('<f', self.stream[:4])[0])
             self.stream = self.stream[4:]
         else:                                           # Write the float
             self.stream = self.stream + struct.pack('<f', getattr(target, member_name))
 
     def def_float_matrix(self, target, member_name, frames, valuesPerFrame):
-        if self.decode:                                 # Read the float matrix
+        if self.do_decode:                                 # Read the float matrix
             matrix = []
             for i in range(0, frames):
                 frame = []
@@ -206,7 +235,7 @@ class XMot:
                     self.stream = self.stream + struct.pack('<f', getattr(target, member_name)[i][j])
 
     def def_float_vector(self, target, member_name, dimensions):
-        if self.decode:                                 # Read the float vector
+        if self.do_decode:                                 # Read the float vector
             vector = []
             for i in range(0, dimensions):
                 val, self.stream = struct.unpack('<f', self.stream[:4])[0], self.stream[4:]
@@ -224,62 +253,3 @@ class XMot:
             str = str[:-2]
             str += " ]"
             print(str)
-
-    def write_file(self, filename):
-        with io.open(filename, "wb") as f:
-            f.write(self.stream)
-
-with io.open(xmot_file, "rb") as f:
-
-    xmot = XMot()
-    xmot.raw_file = f.read()
-
-    xmot.decode = True
-    xmot.operate()          # Decode into the class
-
-    xmot.decode = False
-    xmot.operate()          # Encode back to the file
-
-    assert xmot.raw_file == xmot.stream     # And always assert that the conversion is lossless in both directions
-
-    xmot.modify()           # Now do the real work
-    
-    xmot.operate()          # Encode back to the file
-
-    for filename in out:
-        xmot.write_file(os.path.join(outdir, filename))
-
-# dir = "_compiledAnimation"
-# for file in os.listdir(dir):
-#     # Open file
-#     with io.open(os.path.join(dir, file), "rb") as f:
-#         data = f.read()
-
-#         # if (data.find(b'!FH_Dragon_Right_Leg_Leg_1_New Layer_NEWIKGoalHelper') == -1):
-#         #     continue
-
-#         # if (data.find(b'!FH_Dragon_Left_Leg_Leg_1_New Layer_NEWIKGoalHelper') == -1):
-#         #     continue
-
-#         # if (data.find(b'!FH_Dragon_Spine_Spine_1_New Layer_GradientRotation') == -1):
-#         #     continue
-
-#         # if (data.find(b'\xAE\x47\xE1\x3E') == -1):
-#         #     continue
-
-#         # if (data.find(b'\x8F\xC2\xF5\x3E') == -1):
-#         #     continue
-
-#         # if (data.find(b'\xFD\xBE\xC5\xC1') == -1):
-#         #     continue
-
-#         # if (data.find(b'\x11\xFD\xC8\xC1') == -1):
-#         #     continue
-
-#         # if (data.find(b'\x0A\xD7\x23\x3D') == -1):
-#         #     continue
-
-#         if (data.find(b"Layer_GradientRotation") == -1):
-#             continue
-
-#         print(f"{file}")
