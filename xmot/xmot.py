@@ -56,15 +56,23 @@ class FileFormat:
 
         # Start operating on the encoding
 
-        self.def_string(8, "magic_header")
+        self.def_string(8, "genom_header")
 
         # self.def_padding(0x1C0 - 24, "front_padding")
         # self.def_padding(0x1BC - 24, "front_padding")
         self.def_padding(49, "front_padding")
 
-        obj1_type = self.def_type("obj1")
-        if obj1_type == SomeMotionTypeEnum.THREE_VECTORS_TYPE_1:
-            self.def_three_vector_type("obj1")
+        self.def_obj("obj1")
+        self.def_obj("obj2")
+        self.def_obj("obj3")
+        self.def_obj("obj4")
+        self.def_obj("obj5")
+
+        self.def_obj("obj6")
+
+        self.def_obj("obj7")
+        self.def_obj("obj8")
+        self.def_obj("obj9")
 
         # self.def_obj("ik1")
 
@@ -95,7 +103,7 @@ class FileFormat:
     def __str__(self):
         return self.attr.__str__()
     
-    def def_type(self, member_name):
+    def def_object_type(self, member_name):
         return self.def_enum_int(SomeMotionTypeEnum, f"{member_name}_type")
     
     def modify(self):
@@ -112,7 +120,7 @@ class FileFormat:
         self.def_int(f"{member_name}_label_length")
         self.def_string(getattr(self.attr, f"{member_name}_label_length"), f"{member_name}_label")
 
-    def def_three_vector_type(self, member_name):
+    def def_three_vector_object(self, member_name):
         self.def_int(f"{member_name}_n5")
         self.def_int(f"{member_name}_n6")
         self.def_float_vector(3, f"{member_name}_vec1")
@@ -121,17 +129,16 @@ class FileFormat:
         self.def_int(f"{member_name}_n10")
         self.def_padding(4, f"{member_name}_pad1")
         self.def_int(f"{member_name}_int1")
-        self.def_padding(8, f"{member_name}_pad3")
+        self.def_padding(8, f"{member_name}_pad2")
         self.def_int(f"{member_name}_int2")
+        self.def_padding(16, f"{member_name}_pad3")
+        self.def_label(member_name)
 
     def def_obj(self, member_name):
-        self.def_enum_int(SomeMotionTypeEnum, f"{member_name}_type")
-
-        type = SomeMotionTypeEnum[getattr(self.attr, f"{member_name}_type")]
+        setattr(self.attr, f"{member_name}_beginning", "_______________________BEGIN___________________________")
+        type = self.def_object_type(member_name)
         if type == SomeMotionTypeEnum.THREE_VECTORS_TYPE_1:
-
-            self.def_padding(16, f"{member_name}_label_pad")
-            self.def_label(member_name)
+            self.def_three_vector_object(member_name)
         elif type == SomeMotionTypeEnum.FRAME_NUM_TYPE_2:
             self.def_int(f"{member_name}_val2")
             self.def_int(f"{member_name}_val3")
@@ -140,13 +147,20 @@ class FileFormat:
             self.def_padding(2, f"{member_name}_ll_padding")
             self.def_float_matrix(getattr(self.attr, f"{member_name}_frame_count"), 4, f"{member_name}_frame_matrix")
 
+            if (getattr(self.attr, f"{member_name}_ll") == b"LR" ):
+                self.def_float_matrix(16, 4, f"{member_name}_second_matrix")
+                self.def_padding(40, f"{member_name}_second_padding")
+                self.def_label(member_name)
+
             # self.def_obj(f"{member_name}_sub1")
             # self.def_obj(f"{member_name}_sub2")
             
-            self.def_padding(292, "g1_post_padding")
-            self.def_label(member_name)
+            #self.def_padding(292, "g1_post_padding")
+            #self.def_label(member_name)
         else:
             raise Exception(f"Unknown type {type}")
+        
+        setattr(self.attr, f"{member_name}____ending", "_______________________END___________________________")
 
     def def_padding(self, bytes, member_name):
         if self.decode:                                 # Remove and remember said number of bytes
