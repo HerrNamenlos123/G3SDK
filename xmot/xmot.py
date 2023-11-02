@@ -1,5 +1,6 @@
 import io
 import os
+import json
 import struct
 from enum import Enum
 
@@ -7,9 +8,9 @@ os.system("cls")
 
 # See: https://forum.xentax.com/viewtopic.php?t=9369
 
-# xmot = "dragon2/Dragon_Stand_None_Cast_P0_Cast_Raise_N_Fwd_00_%_00_P0_0.xmot"
-# xmot = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
-xmot = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
+# xmot_file = "dragon2/Dragon_Stand_None_Cast_P0_Cast_Raise_N_Fwd_00_%_00_P0_0.xmot"
+# xmot_file = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
+xmot_file = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
 
 outdir = "C:\Program Files (x86)\Steam\steamapps\common\Gothic 3\Data\_compiledAnimation"
 out = [
@@ -19,15 +20,21 @@ out = [
 ]
 
 class SomeMotionTypeEnum(Enum):
-    THREE_VECTORS_TYPE_1 = 1
-    FRAME_NUM_TYPE_2 = 2
+    ANIMATION_VECTORS = 1
+    ANIMATION_FRAMES = 2
+    DEADBEEF = 0xdeadbeef
 
-class FileAttribs:
-    def __init(self):
+class Asset:
+    def __init__(self):
         pass
-
-    def __str__(self):
-        return '\n'.join("%s: %s" % item for item in vars(self).items())
+    
+class AssetEncoder(json.JSONEncoder):
+    def default(self, o):
+        
+        if isinstance(o, bytes): # Convert into list of bytes
+            return [hex(x) for x in o]
+        
+        return o.__dict__
 
 # This is a very sophisticated architecture:
 # The operate function defines which datatype comes when. The key is
@@ -38,7 +45,7 @@ class FileAttribs:
 # get an error if variable names collided, which will be noticed by the re-encoded file
 # not being the same as the original file.
 
-class FileFormat:
+class XMot:
     def __init__(self):
         self.decode = True     # True for reading the file, False for writing
         
@@ -46,7 +53,8 @@ class FileFormat:
         self.stream = b""
 
         # This object contains all parameters of the file
-        self.attr = FileAttribs()
+        self.root = Asset()
+        self.root.assets = []
 
     def operate(self):
         if self.decode:
@@ -56,149 +64,133 @@ class FileFormat:
 
         # Start operating on the encoding
 
-        self.def_string(8, "genom_header")
+        self.def_string(self.root, "genom_header", 8)
+        self.def_padding(self.root, "front_padding", 49)
 
-        # self.def_padding(0x1C0 - 24, "front_padding")
-        # self.def_padding(0x1BC - 24, "front_padding")
-        self.def_padding(49, "front_padding")
+        if self.decode:
+            i = 1
+            while True:
+                self.root.assets.append(Asset())
+                type = self.def_asset(self.root.assets[-1])
+                if type == SomeMotionTypeEnum.DEADBEEF:  # Check if we reached the end
+                    self.root.assets.pop()
+                    break
+                i += 1
+        else:
+            for asset in self.root.assets:
+                self.def_asset(asset)
 
-        for i in range(1, 90):
-            self.def_obj(f"obj_{i}")
+        self.def_enum_int(self.root, "deadbeef", SomeMotionTypeEnum)
+        self.def_int(self.root, "deadbeef_int")
+        self.def_padding(self.root, "deadbeef_end_padding", 1)
 
-        # self.def_obj("ik1")
-
-        # self.def_obj("ik2")
-        
-        # self.def_obj("g1")
-        # self.def_obj("g1_sub1")
-
-        # self.def_float("int1")
-
-        # self.def_int("toe_label_length")
-        # self.def_string(self.attr.toe_label_length, "toe_label")
-        # self.def_enum_int(SomeMotionTypeEnum, "toe_type")
-        # self.def_int("toe_int2")
-        # self.def_int("toe_int3")
-        # self.def_float_vector(3, "toe_vector1")
-        # self.def_float_vector(3, "toe_vector2")
-        # self.def_float_vector(4, "toe_vector3")
-        # self.def_int("tor_int4")
-        # self.def_int("tor_int5")
-        # self.def_int("toe_int6")
-        # self.def_padding(4, "toe_2_padding")
-        # self.def_int("toe_int7")
-        # self.def_int("toe_int8")
-
-        self.def_padding(len(self.stream), "back_padding")
-
-    def __str__(self):
-        return self.attr.__str__()
-    
-    def get(self, member_name):
-        return getattr(self.attr, member_name)
-    
-    def def_object_type(self, member_name):
-        return self.def_enum_int(SomeMotionTypeEnum, f"{member_name}_type")
+        self.def_padding(self.root, "unparsed_data", len(self.stream))
     
     def modify(self):
-        # for i in range(len(self.attr.frame_matrix)):
-        #     for j in range(len(self.attr.frame_matrix[i])):
-        #         self.attr.frame_matrix[i][j] = 0.0
-
-        # for i in range(len(self.attr.frame_matrix_b)):
-        #     for j in range(len(self.attr.frame_matrix_b[i])):
-        #         self.attr.frame_matrix_b[i][j] = 0.0
+        # Modify the file here
+        print(self)
         pass
 
-    def def_label(self, member_name):
-        self.def_int(f"{member_name}_label_length")
-        self.def_string(getattr(self.attr, f"{member_name}_label_length"), f"{member_name}_label")
+    def __str__(self):
+        return json.dumps(self.root, indent=4, cls=AssetEncoder)
+    
+    def peek_object_type(self, target):
+        return self.peek_enum_int(target, "type", SomeMotionTypeEnum)
+    
+    def def_object_type(self, target):
+        return self.def_enum_int(target, "type", SomeMotionTypeEnum)
 
-    def def_three_vector_object(self, member_name):
-        self.def_int(f"{member_name}_n5")
-        self.def_int(f"{member_name}_n6")
-        self.def_float_vector(3, f"{member_name}_vec1")
-        self.def_float_vector(3, f"{member_name}_vec2")
-        self.def_float_vector(4, f"{member_name}_vec3")
-        self.def_int(f"{member_name}_n10")
-        self.def_padding(4, f"{member_name}_pad1")
-        self.def_int(f"{member_name}_int1")
-        self.def_padding(8, f"{member_name}_pad2")
-        self.def_int(f"{member_name}_int2")
-        self.def_padding(16, f"{member_name}_pad3")
-        self.def_label(member_name)
+    def def_label(self, target):
+        self.def_int(target, "label_length")
+        self.def_string(target, "label", getattr(target, "label_length"))
 
-    def def_obj(self, member_name):
-        setattr(self.attr, f"{member_name}_beginning", "_______________________BEGIN___________________________")
-        type = self.def_object_type(member_name)
-        if type == SomeMotionTypeEnum.THREE_VECTORS_TYPE_1:
-            self.def_three_vector_object(member_name)
-        elif type == SomeMotionTypeEnum.FRAME_NUM_TYPE_2:
-            self.def_int(f"{member_name}_val2")
-            self.def_int(f"{member_name}_val3")
-            self.def_int(f"{member_name}_frame_count")
-            self.def_string(2, f"{member_name}_ll")
-            self.def_padding(2, f"{member_name}_ll_padding")
+    def def_three_vector_asset(self, target):
+        self.def_int(target, "n5")
+        self.def_int(target, "n6")
+        self.def_float_vector(target, "vec1", 3)
+        self.def_float_vector(target, "vec2", 3)
+        self.def_float_vector(target, "vec3", 4)
+        self.def_int(target, "n10")
+        self.def_padding(target, "pad1", 4)
+        self.def_int(target, "int1")
+        self.def_padding(target, "pad2", 8)
+        self.def_int(target, "int2")
+        self.def_padding(target, "pad3", 16)
+        self.def_label(target)
 
-            if (self.get(f"{member_name}_ll") == b"LR" ):
-                self.def_float_matrix(self.get(f"{member_name}_frame_count"), 5, f"{member_name}_frame_matrix")
-            else:
-                self.def_float_matrix(self.get(f"{member_name}_frame_count"), 4, f"{member_name}_frame_matrix")
-                
-                # self.def_float_matrix(16, 4, f"{member_name}_second_matrix")
-                # self.def_padding(40, f"{member_name}_second_padding")
-                # self.def_label(member_name)
-
-            # self.def_obj(f"{member_name}_sub1")
-            # self.def_obj(f"{member_name}_sub2")
-            
-            #self.def_padding(292, "g1_post_padding")
-            #self.def_label(member_name)
+    def def_frame_asset(self, target):
+        self.def_int(target, "val2")
+        self.def_int(target, "val3")
+        self.def_int(target, "frame_count")
+        self.def_string(target, "frame_type", 2)
+        self.def_padding(target, "ll_padding", 2)
+        if (getattr(target, "frame_type") == "LR" ):
+            self.def_float_matrix(target, "frames", getattr(target, "frame_count"), 5)
         else:
-            raise Exception(f"Unknown type {type}")
-        
-        setattr(self.attr, f"{member_name}____ending", "_______________________END___________________________")
+            self.def_float_matrix(target, "frames", getattr(target, "frame_count"), 4)
 
-    def def_padding(self, bytes, member_name):
+    def def_asset(self, target):
+        object_type = self.peek_object_type(target)
+        if object_type == SomeMotionTypeEnum.ANIMATION_VECTORS:
+            self.def_object_type(target)
+            self.def_three_vector_asset(target)
+        elif object_type == SomeMotionTypeEnum.ANIMATION_FRAMES:
+            self.def_object_type(target)
+            self.def_frame_asset(target)
+        elif self.decode and object_type == SomeMotionTypeEnum.DEADBEEF: # This deadbeef branch will only be encountered when decoding
+            pass
+        else:
+            raise Exception(f"Unknown type {object_type}")
+        
+        return object_type
+
+    def def_padding(self, target, member_name, bytes):
         if self.decode:                                 # Remove and remember said number of bytes
-            setattr(self.attr, member_name, self.stream[:bytes])
+            setattr(target, member_name, self.stream[:bytes])
             self.stream = self.stream[bytes:]
         else:                                           # Put them back into place
-            self.stream = self.stream + getattr(self.attr, member_name)
+            self.stream = self.stream + getattr(target, member_name)
             
-    def def_string(self, num_characters, member_name):
+    def def_string(self, target, member_name, num_characters):
         if self.decode:                                 # Read the string
-            setattr(self.attr, member_name, self.stream[:num_characters])
+            setattr(target, member_name, self.stream[:num_characters].decode("utf-8"))
             self.stream = self.stream[num_characters:]
         else:                                           # Write the string
-            self.stream = self.stream + getattr(self.attr, member_name)
+            self.stream = self.stream + getattr(target, member_name).encode("utf-8")
 
-    def def_int(self, member_name):
+    def def_int(self, target, member_name):
         if self.decode:                                 # Read the int
-            setattr(self.attr, member_name, struct.unpack('<i', self.stream[:4])[0])
+            setattr(target, member_name, struct.unpack('<i', self.stream[:4])[0])
             self.stream = self.stream[4:]
         else:                                           # Write the int
-            self.stream = self.stream + struct.pack('<i', getattr(self.attr, member_name))
+            self.stream = self.stream + struct.pack('<i', getattr(target, member_name))
 
-    def def_enum_int(self, enum, member_name):
-        if self.decode:                                 # Read the enum int
-            int = struct.unpack('<i', self.stream[:4])[0]
-            setattr(self.attr, member_name, enum(int).name)
+    def peek_enum_int(self, target, member_name, enum):
+        if self.decode:
+            int = struct.unpack('<I', self.stream[:4])[0]
+            return enum(int)
+        else:
+            return enum[getattr(target, member_name)]
+
+    def def_enum_int(self, target, member_name, enum):
+        if self.decode:                                 # Read the unsigned enum int
+            int = struct.unpack('<I', self.stream[:4])[0]
+            setattr(target, member_name, enum(int).name)
             self.stream = self.stream[4:]
             return enum(int)
-        else:                                           # Write the enum int
-            str = getattr(self.attr, member_name)
-            self.stream = self.stream + struct.pack('<i', enum[str].value)
-            return enum[str]
+        else:                                           # Write the unsigned enum int
+            string = getattr(target, member_name)
+            self.stream = self.stream + struct.pack('<I', enum[string].value)
+            return enum[string]
 
-    def def_float(self, member_name):
+    def def_float(self, target, member_name):
         if self.decode:                                 # Read the float
-            setattr(self.attr, member_name, struct.unpack('<f', self.stream[:4])[0])
+            setattr(target, member_name, struct.unpack('<f', self.stream[:4])[0])
             self.stream = self.stream[4:]
         else:                                           # Write the float
-            self.stream = self.stream + struct.pack('<f', getattr(self.attr, member_name))
+            self.stream = self.stream + struct.pack('<f', getattr(target, member_name))
 
-    def def_float_matrix(self, frames, valuesPerFrame, member_name):
+    def def_float_matrix(self, target, member_name, frames, valuesPerFrame):
         if self.decode:                                 # Read the float matrix
             matrix = []
             for i in range(0, frames):
@@ -207,22 +199,22 @@ class FileFormat:
                     val, self.stream = struct.unpack('<f', self.stream[:4])[0], self.stream[4:]
                     frame.append(val)
                 matrix.append(frame)
-            setattr(self.attr, member_name, matrix)
+            setattr(target, member_name, matrix)
         else:                                           # Write the float matrix
             for i in range(0, frames):
                 for j in range(0, valuesPerFrame):
-                    self.stream = self.stream + struct.pack('<f', getattr(self.attr, member_name)[i][j])
+                    self.stream = self.stream + struct.pack('<f', getattr(target, member_name)[i][j])
 
-    def def_float_vector(self, dimensions, member_name):
+    def def_float_vector(self, target, member_name, dimensions):
         if self.decode:                                 # Read the float vector
             vector = []
             for i in range(0, dimensions):
                 val, self.stream = struct.unpack('<f', self.stream[:4])[0], self.stream[4:]
                 vector.append(val)
-            setattr(self.attr, member_name, vector)
+            setattr(target, member_name, vector)
         else:                                           # Write the float vector
             for i in range(0, dimensions):
-                self.stream = self.stream + struct.pack('<f', getattr(self.attr, member_name)[i])
+                self.stream = self.stream + struct.pack('<f', getattr(target, member_name)[i])
 
     def printMatrix(matrix):
         for frame in matrix:
@@ -237,27 +229,25 @@ class FileFormat:
         with io.open(filename, "wb") as f:
             f.write(self.stream)
 
-with io.open(xmot, "rb") as f:
+with io.open(xmot_file, "rb") as f:
 
-    file = FileFormat()
-    file.raw_file = f.read()
+    xmot = XMot()
+    xmot.raw_file = f.read()
 
-    file.decode = True
-    file.operate()          # Decode into the class
+    xmot.decode = True
+    xmot.operate()          # Decode into the class
 
-    file.decode = False
-    file.operate()          # Encode back to the file
+    xmot.decode = False
+    xmot.operate()          # Encode back to the file
 
-    assert file.raw_file == file.stream     # And always assert that the conversion is lossless in both directions
+    assert xmot.raw_file == xmot.stream     # And always assert that the conversion is lossless in both directions
 
-    file.modify()           # Not do the real work
+    xmot.modify()           # Now do the real work
     
-    file.operate()          # Encode back to the file
-
-    print(file)
+    xmot.operate()          # Encode back to the file
 
     for filename in out:
-        file.write_file(os.path.join(outdir, filename))
+        xmot.write_file(os.path.join(outdir, filename))
 
 # dir = "_compiledAnimation"
 # for file in os.listdir(dir):

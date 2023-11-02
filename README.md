@@ -36,6 +36,9 @@ One of many goals was to reverse engineer the .xmot file format. All other file 
 
 This attempt is also here, so make sure to look into the `xmot` folder. There is a python file which is a file converter, and it can half-way decode a .xmot file, and then re-encode it back. This means it might be possible to change values. However, only parts of the file are decoded yet and many parts of the file format are still black boxes.
 
+https://web.archive.org/web/20230513172524/https://forum.xentax.com/viewtopic.php?t=9369 is very valuable.
+It is saved locally at [Animation researching - XenTaX](xmot/animation_researching_xentax.htm).
+
 ## You need help?
 
 As said, I copied all files into this repository and did not do any more work afterwards. If you need any help getting the project to compile, feel free to contact me at herrnamenlos123@gmail.com or in an issue. 
