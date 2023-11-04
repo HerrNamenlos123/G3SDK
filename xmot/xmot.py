@@ -65,9 +65,12 @@ class XMot:
 
         # Now remove all data that is not relevant for editing
         del self.data["genom_header"]
-        del self.data["deadbeef"]
-        del self.data["deadbeef_int"]
-        del self.data["deadbeef_end_padding"]
+        if "deadbeef" in self.data:
+            del self.data["deadbeef"]
+        if "deadbeef_int" in self.data:
+            del self.data["deadbeef_int"]
+        if "deadbeef_end_padding" in self.data:
+            del self.data["deadbeef_end_padding"]
 
         return json.dumps(self.data, cls=XMotEncoder, indent=4)
     
@@ -177,10 +180,14 @@ class XMot:
             
     def def_string(self, target, member_name, num_characters):
         if self.do_decode:                                 # Read the string
-            target[member_name] = self.stream[:num_characters].decode("utf-8")
+            binary = self.stream[:num_characters]
+            try:
+                target[member_name] = binary.decode("latin-1")
+            except:
+                raise Exception(f"Could not decode string {member_name}: {binary}")
             self.stream = self.stream[num_characters:]
         else:                                           # Write the string
-            self.stream = self.stream + target[member_name].encode("utf-8")
+            self.stream = self.stream + target[member_name].encode("latin-1")
 
     def def_int(self, target, member_name):
         if self.do_decode:                                 # Read the int
