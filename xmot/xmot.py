@@ -24,6 +24,9 @@ from enum import Enum
 # - Location 0x21 (33) is checked against being 0
 # - Location 0xc  (12) is used as the length of a loop
 # - Location 0x14 (20) is used as a starting pointer for the loop and iterated in 4-byte steps
+#
+# The frames are: LP for Position (time + vec3)
+#                 LR for Rotation (time + quaternion vec4)
 
 class AnimationType(Enum):
     ANIMATION_VECTORS = 1
@@ -92,14 +95,16 @@ class XMot:
         # if "deadbeef_end_padding" in self.data:
         #     del self.data["deadbeef_end_padding"]
 
-        return json.dumps(self.data, cls=XMotEncoder, indent=4)
+        # return json.dumps(self.data, cls=XMotEncoder, indent=4)
+        return self.data
     
     def encode(self, data):
         if not self.is_decoded:
             raise Exception("You must decode a file at least once before encoding it")
         
         # Now load the json string and restore all data relevant for encoding
-        self.data = json.loads(data, cls=XMotDecoder)
+        # self.data = json.loads(data, cls=XMotDecoder)
+        self.data = data
         # self.data["genom_header"] = "GENOMFLE"
         # self.data["deadbeef"] = AnimationType.DEADBEEF.name
         # self.data["deadbeef_int"] = 1

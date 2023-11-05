@@ -1,6 +1,8 @@
 import xmot
 import os
 import io
+import json
+import random
 
 os.system("cls")
 
@@ -25,14 +27,38 @@ xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot"
 x = xmot.XMot(xmot_file)
 data = x.decode()
 
+with io.open("xmot.json", "w") as f:
+    f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
+
+# os.system("notepad xmot.json")
+
+# with io.open("xmot.json", "r") as f:
+#     data = json.loads(f.read(), cls=xmot.XMotDecoder)
+
 # print(f"{byte_at(x.original_file_content, 0x21)} == 0: Do mallocs")
 # print(f"{byte_at(x.original_file_content, 0x1f)} != 0: Print stuff")
 # print(f"{byte_at(x.original_file_content, 0x0c)} = loop length")
 # print(f"{x.original_file_content[0x14:0x18]} = first int")
 
+for i in range(len(data["assets"])):
+    if data["assets"][i]["type"] == "ANIMATION_FRAMES":
+        for frame in range(len(data["assets"][i]["frames"])):
+            if data["assets"][i]["frame_type"] == "LR":
+                data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random(), random.random() ]
+            else:
+                data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random() ]
+            pass
 
 # print(x.original_file_content)
-print(data)
+print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
+# print(x.data["assets"][4])
+# x.data["assets"][4]["vec1"] = [ 1, 2, 3 ]
+# x.data["assets"][4]["vec2"] = [ 4, 5, 6 ]
+# x.data["assets"][4]["vec3"] = [ 7, 8, 9, 10 ]
+
+
+
+
 
 result = x.encode(data)
 
