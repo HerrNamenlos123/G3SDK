@@ -5,6 +5,26 @@ from enum import Enum
 
 # See: https://web.archive.org/web/20230513172524/https://forum.xentax.com/viewtopic.php?t=9369
 
+# Disassembling the Gothic 3 DLLs shows that there are things like:
+# - LMA motion files
+# - LMF facial motion files
+#
+# The beginning of every file is "GENOMFLE". After that, a 16-bit ushort and a 32-bit ulong int follow.
+# Then comes the file content, and then a DEADBEEF value at the end of the file.
+# The first 14 bytes (0-13) are the GENOM header
+#
+# The outermost structure is the eCArchiveFile content described above. It is called "genom_..." here. Inside of that
+# is the content of the Archive file, which is prefixed "content_..." here.
+#
+#  eCWrapper_emfx2Motion::ImportEMFX2Motion seems to be very relevant
+#
+# The emfx2 file format version (eCWrapper_emfx2Motion::GetVersion) seems to be hard-coded to 1.
+#
+# Disassembling confirmed that: (global indices) All data indices seem to be offset by one. They are already fixed here:
+# - Location 0x21 (33) is checked against being 0
+# - Location 0xc  (12) is used as the length of a loop
+# - Location 0x14 (20) is used as a starting pointer for the loop and iterated in 4-byte steps
+
 class AnimationType(Enum):
     ANIMATION_VECTORS = 1
     ANIMATION_FRAMES = 2
@@ -64,13 +84,13 @@ class XMot:
         assert self.original_file_content == self.stream     # Always assert that the conversion is lossless in both directions
 
         # Now remove all data that is not relevant for editing
-        del self.data["genom_header"]
-        if "deadbeef" in self.data:
-            del self.data["deadbeef"]
-        if "deadbeef_int" in self.data:
-            del self.data["deadbeef_int"]
-        if "deadbeef_end_padding" in self.data:
-            del self.data["deadbeef_end_padding"]
+        # del self.data["genom_header"]
+        # if "deadbeef" in self.data:
+        #     del self.data["deadbeef"]
+        # if "deadbeef_int" in self.data:
+        #     del self.data["deadbeef_int"]
+        # if "deadbeef_end_padding" in self.data:
+        #     del self.data["deadbeef_end_padding"]
 
         return json.dumps(self.data, cls=XMotEncoder, indent=4)
     
@@ -80,10 +100,10 @@ class XMot:
         
         # Now load the json string and restore all data relevant for encoding
         self.data = json.loads(data, cls=XMotDecoder)
-        self.data["genom_header"] = "GENOMFLE"
-        self.data["deadbeef"] = AnimationType.DEADBEEF.name
-        self.data["deadbeef_int"] = 1
-        self.data["deadbeef_end_padding"] = b"\x00"
+        # self.data["genom_header"] = "GENOMFLE"
+        # self.data["deadbeef"] = AnimationType.DEADBEEF.name
+        # self.data["deadbeef_int"] = 1
+        # self.data["deadbeef_end_padding"] = b"\x00"
         
         self.do_decode = False
         self.operate()
@@ -97,8 +117,36 @@ class XMot:
 
         # Start operating on the encoding
 
+        # Parse the GENOM wrapper
         self.def_string(self.data, "genom_header", 8)
-        self.def_padding(self.data, "front_padding", 49)
+        self.def_ushort(self.data, "genom_version")
+        self.def_ulong(self.data, "genom_content_length")
+
+        # Now parse the GENOM content which is the file wrapper
+        self.def_ulong(self.data, "content_int1")                
+        self.def_padding(self.data, "content_pad2", 2)                                
+        self.def_string(self.data, "content_string1", 4)                              
+        self.def_padding(self.data, "content_pad7", 20)             
+        self.def_ushort(self.data, "content_is_some_kind_of_other_format")      
+
+        # I HAVE NO IDEA WHYYY????
+        if self.data["content_is_some_kind_of_other_format"] != 0:
+            self.def_ulong(self.data, "content_extra_int1")
+            self.def_ulong(self.data, "content_extra_int2")
+
+        self.def_ulong(self.data, "content_verified_offset_from_here_to_deadbeef")
+        
+        # Verify deadbeef offset
+        if self.do_decode:
+            offset = self.data["content_verified_offset_from_here_to_deadbeef"]
+            deadbeef = self.stream[offset:offset+4]
+            assert deadbeef == b"\xef\xbe\xad\xde"
+
+        # Now the LMA file content (This header is checked in CheckLMAHeader())
+        self.def_string(self.data, "LMA_string", 4)         # This string is compared one by one in the source code, it must be "LMA "
+        self.def_byte(self.data, "LMA_byte1")               # This byte must be 1. This byte is assigned to eCWrapper_emfx2Motion + 0x24
+        self.def_byte(self.data, "LMA_byte2")               # This byte is unknown (usually 1). This byte is assigned to eCWrapper_emfx2Motion + 0x28
+        self.def_byte(self.data, "LMA_byte3")               # This byte must be 0
 
         if self.do_decode:
             self.data["assets"] = []
@@ -114,11 +162,9 @@ class XMot:
             for asset in self.data["assets"]:
                 self.def_asset(asset)
 
-        self.def_enum_int(self.data, "deadbeef", AnimationType)
-        self.def_int(self.data, "deadbeef_int")
-        self.def_padding(self.data, "deadbeef_end_padding", 1)
+        self.def_enum_int(self.data, "genom_deadbeef", AnimationType)
 
-        self.def_padding(self.data, "unparsed_data", len(self.stream))
+        self.def_padding(self.data, "genom_unparsed_data", len(self.stream))
         self.is_decoded = True # If it was decoded at least once
     
     def peek_object_type(self, target):
@@ -128,27 +174,27 @@ class XMot:
         return self.def_enum_int(target, "type", AnimationType)
 
     def def_label(self, target):
-        self.def_int(target, "label_length")
+        self.def_ulong(target, "label_length")
         self.def_string(target, "label", target["label_length"])
 
     def def_three_vector_asset(self, target):
-        self.def_int(target, "n5")
-        self.def_int(target, "n6")
+        self.def_ulong(target, "n5")
+        self.def_ulong(target, "n6")
         self.def_float_vector(target, "vec1", 3)
         self.def_float_vector(target, "vec2", 3)
         self.def_float_vector(target, "vec3", 4)
-        self.def_int(target, "n10")
+        self.def_ulong(target, "n10")
         self.def_padding(target, "pad1", 4)
-        self.def_int(target, "int1")
+        self.def_ulong(target, "int1")
         self.def_padding(target, "pad2", 8)
-        self.def_int(target, "int2")
+        self.def_ulong(target, "int2")
         self.def_padding(target, "pad3", 16)
         self.def_label(target)
 
     def def_frame_asset(self, target):
-        self.def_int(target, "val2")
-        self.def_int(target, "val3")
-        self.def_int(target, "frame_count")
+        self.def_ulong(target, "val2")
+        self.def_ulong(target, "val3")
+        self.def_ulong(target, "frame_count")
         self.def_string(target, "frame_type", 2)
         self.def_padding(target, "ll_padding", 2)
         if (target["frame_type"] == "LR" ):
@@ -189,12 +235,33 @@ class XMot:
         else:                                           # Write the string
             self.stream = self.stream + target[member_name].encode("latin-1")
 
-    def def_int(self, target, member_name):
-        if self.do_decode:                                 # Read the int
-            target[member_name] = struct.unpack('<i', self.stream[:4])[0]
-            self.stream = self.stream[4:]
-        else:                                           # Write the int
-            self.stream = self.stream + struct.pack('<i', target[member_name])
+    def def_struct(self, target, member_name, struct_format):
+        if self.do_decode:                                 # Read the struct
+            target[member_name] = struct.unpack(struct_format, self.stream[:struct.calcsize(struct_format)])[0]
+            self.stream = self.stream[struct.calcsize(struct_format):]
+        else:                                           # Write the struct
+            self.stream = self.stream + struct.pack(struct_format, target[member_name])
+
+    def def_byte(self, target, member_name):
+        self.def_struct(target, member_name, '<b')
+
+    def def_ubyte(self, target, member_name):
+        self.def_struct(target, member_name, '<B')
+
+    def def_short(self, target, member_name):
+        self.def_struct(target, member_name, '<h')
+
+    def def_ushort(self, target, member_name):
+        self.def_struct(target, member_name, '<H')
+
+    def def_long(self, target, member_name):
+        self.def_struct(target, member_name, '<i')
+
+    def def_ulong(self, target, member_name):
+        self.def_struct(target, member_name, '<I')
+
+    def def_float(self, target, member_name):
+        self.def_struct(target, member_name, '<f')
 
     def peek_enum_int(self, target, member_name, enum):
         if self.do_decode:
@@ -213,13 +280,6 @@ class XMot:
             string = target[member_name]
             self.stream = self.stream + struct.pack('<I', enum[string].value)
             return enum[string]
-
-    def def_float(self, target, member_name):
-        if self.do_decode:                                 # Read the float
-            target[member_name] = struct.unpack('<f', self.stream[:4])[0]
-            self.stream = self.stream[4:]
-        else:                                           # Write the float
-            self.stream = self.stream + struct.pack('<f', target[member_name])
 
     def def_float_matrix(self, target, member_name, frames, valuesPerFrame):
         if self.do_decode:                                 # Read the float matrix
