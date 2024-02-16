@@ -1,3 +1,4 @@
+@echo off
 REM Usage: dll2lib [32|64] some-file.dll
 REM
 REM Generates some-file.lib from some-file.dll, making an intermediate
@@ -17,6 +18,7 @@ set def_file=%dll_file_no_ext%.def
 set lib_file=%dll_file_no_ext%.lib
 set lib_name=%dll_file_no_ext%
 
+echo Dumping exports from %dll_file% to %exports_file%
 dumpbin /exports %dll_file% > %exports_file%
 
 echo LIBRARY %lib_name% > %def_file%

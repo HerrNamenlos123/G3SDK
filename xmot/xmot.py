@@ -10,11 +10,13 @@ from enum import Enum
 # - LMF facial motion files
 #
 # The beginning of every file is "GENOMFLE". After that, a 16-bit ushort and a 32-bit ulong int follow.
-# Then comes the file content, and then a DEADBEEF value at the end of the file.
+# The 32-bit ulong is the position of the DEADBEEF value, counted from the beginning of the file. DEADBEEF marks
+#  the end of the file.
+# After the 32-bit ulong directly comes the file content, and then a DEADBEEF value at the end of the file.
 # The first 14 bytes (0-13) are the GENOM header
 #
-# The outermost structure is the eCArchiveFile content described above. It is called "genom_..." here. Inside of that
-# is the content of the Archive file, which is prefixed "content_..." here.
+# The outermost structure is the eCArchiveFile content described above. Inside of that
+# is the content of the Archive file. 
 #
 #  eCWrapper_emfx2Motion::ImportEMFX2Motion seems to be very relevant
 #
@@ -28,10 +30,71 @@ from enum import Enum
 # The frames are: LP for Position (time + vec3)
 #                 LR for Rotation (time + quaternion vec4)
 
-class AnimationType(Enum):
-    ANIMATION_VECTORS = 1
-    ANIMATION_FRAMES = 2
-    DEADBEEF = 0xdeadbeef
+# Important links:
+#   https://github.com/o3de/o3de/tree/development/Gems/EMotionFX -> This seems to be our best source for EMotionFX
+#   https://github.com/aws/lumberyard
+#   https://www.gamezone.com/news/gz_interview_emotion_fx_2_gives_half_life_2_a_face_lift/
+#   https://docs.o3de.org/docs/api/gems/emotionfx/class_m_core_1_1_memory_file.html
+#    ^^ This seems to be very relevant too, it's the MCore::MemoryFile class used in the EMotionFX engine functions 
+#
+# Gothic Modding Community:
+#   https://gothic-modding-community.github.io/gmc/genome/general_info/object_persistence/
+#
+# The EMotionFX source code gives us this gem: (SharedFileFormatStructs.h, Importer.cpp -> Importer::ProcessChunk())
+#
+# struct FileChunk {
+#     uint32 m_chunkId;        // the chunk ID
+#     uint32 m_sizeInBytes;    // the size in bytes of this chunk (excluding this chunk struct)
+#     uint32 m_version;        // the version of the chunk
+# }
+#
+# It turns out the entire file format is chunked. Every chunk has this header consisting of 4 32-bit ints, and then
+#  m_sizeInBytes bytes of data. Then, the next chunk follows immediately.
+#
+# Every chunk is parsed by something called a ChunkProcessor, and there are a LOT of them. The ChunkID specifies
+#  which ChunkProcessor to use (in Gothic 3 mainly index 1 and 2), and the version specifies the version of the
+#  ChunkProcessor. So if the file format changed they just added a new ChunkProcessor with the same ID but a new version,
+#  and the engine could still load old formats and write new ones. Every chunk of a file can use a different ChunkProcessor
+#  and version.
+#
+# Disassembling and decompiling Engine.dll reveiled all Chunk Processors:
+#  - AnimationChunkProcessor1               id=2    version=1
+#  - ExpressionMotionPartChunkProcessor1    id=11   version=1
+#  - ExpressionMotionPartChunkProcessor2    id=11   version=2
+#  - FileInformationChunkProcessor1         id=16   version=1
+#  - FXMaterialChunkProcessor1              id=13   version=1
+#  - FXMaterialChunkProcessor2              id=13   version=2
+#  - LimitChunkProcessor1                   id=8    version=1
+#  - MaterialChunkProcessor1                id=6    version=1
+#  - MaterialChunkProcessor2                id=6    version=2
+#  - MaterialChunkProcessor3                id=6    version=3
+#  - MaterialChunkProcessor4                id=6    version=4
+#  - MaterialChunkProcessor5                id=6    version=5
+#  - MaterialLayerChunkProcessor1           id=7    version=1
+#  - MaterialLayerChunkProcessor2           id=7    version=2
+#  - MaterialLayerChunkProcessor3           id=7    version=3
+#  - MaterialLayerChunkProcessor4           id=7    version=4
+#  - MeshChunkProcessor1                    id=3    version=1
+#  - MeshChunkProcessor2                    id=3    version=2
+#  - MeshChunkProcessor3                    id=3    version=3
+#  - MeshExpressionPartChunkProcessor1      id=10   version=1
+#  - MeshExpressionPartChunkProcessor2      id=10   version=2
+#  - MeshExpressionPartChunkProcessor3      id=10   version=3
+#  - MotionEventChunkProcessor1             id=15   version=1
+#  - MotionEventChunkProcessor2             id=15   version=2
+#  - MotionPartChunkProcessor1              id=1    version=1
+#  - MotionPartChunkProcessor2              id=1    version=2
+#  - NodeChunkProcessor1                    id=0    version=1
+#  - NodeChunkProcessor2                    id=0    version=2
+#  - NodeChunkProcessor3                    id=0    version=3
+#  - PhonemeMotionDataChunkProcessor1       id=12   version=1
+#  - PhonemeMotionDataChunkProcessor2       id=12   version=2
+#  - PhysicsInfoChunkProcessor1             id=9    version=1
+#  - RepositioningNodeChunkProcessor1       id=14   version=1
+#  - RepositioningNodeChunkProcessor2       id=14   version=2
+#  - SkinningInfoChunkProcessor1            id=4    version=1
+
+GENOM_HEADER_LENGTH = 14 # This is the number of bytes before the file content starts
 
 # Json serializer
 class XMotEncoder(json.JSONEncoder):
@@ -54,269 +117,291 @@ class XMotDecoder(json.JSONDecoder):
             if isinstance(v, str) and v.startswith("0x"):
                 d[k] = bytes.fromhex(v[2:])
         return d
-
-# This is a very sophisticated architecture:
-# The operate function defines which datatype comes when. The key is
-# that this function can encode and do_decode at the same time. This means,
-# you write the definitions once (which datatype, how many bytes, which variable name) (THE VARIABLE NAMES MUST NOT COLLIDE!!!!)
-# And then the file is decoded, modified and re-encoded using the same function.
-# Additionally, the validity of the algorithm is always checked and you should
-# get an error if variable names collided, which will be noticed by the re-encoded file
-# not being the same as the original file.
-
-class XMot:
-    def __init__(self, filename):
-
-        self.do_decode = True     # True for decoding, False for encoding
-        self.is_decoded = False
-        
-        with io.open(filename, "rb") as file:
-            self.original_file_content = file.read()
-
-        self.stream = b""
-        self.data = {}
-
-    def decode(self):
-        if self.is_decoded:
-            raise Exception("You can only decode a file once")
-        
-        self.do_decode = True
-        self.operate()
-        self.do_decode = False
-        self.operate()
-        assert self.original_file_content == self.stream     # Always assert that the conversion is lossless in both directions
-
-        # Now remove all data that is not relevant for editing
-        # del self.data["genom_header"]
-        # if "deadbeef" in self.data:
-        #     del self.data["deadbeef"]
-        # if "deadbeef_int" in self.data:
-        #     del self.data["deadbeef_int"]
-        # if "deadbeef_end_padding" in self.data:
-        #     del self.data["deadbeef_end_padding"]
-
-        # return json.dumps(self.data, cls=XMotEncoder, indent=4)
-        return self.data
     
-    def encode(self, data):
-        if not self.is_decoded:
-            raise Exception("You must decode a file at least once before encoding it")
-        
-        # Now load the json string and restore all data relevant for encoding
-        # self.data = json.loads(data, cls=XMotDecoder)
-        self.data = data
-        # self.data["genom_header"] = "GENOMFLE"
-        # self.data["deadbeef"] = AnimationType.DEADBEEF.name
-        # self.data["deadbeef_int"] = 1
-        # self.data["deadbeef_end_padding"] = b"\x00"
-        
-        self.do_decode = False
-        self.operate()
-        return self.stream
-
-    def operate(self):
-        if self.do_decode:
-            self.stream = self.original_file_content
-        else:
-            self.stream = b""
-
-        # Start operating on the encoding
-
-        # Parse the GENOM wrapper
-        self.def_string(self.data, "genom_header", 8)
-        self.def_ushort(self.data, "genom_version")
-        self.def_ulong(self.data, "genom_content_length")
-
-        # Now parse the GENOM content which is the file wrapper
-        self.def_ulong(self.data, "content_int1")                
-        self.def_padding(self.data, "content_pad2", 2)                                
-        self.def_string(self.data, "content_string1", 4)                              
-        self.def_padding(self.data, "content_pad7", 20)             
-        self.def_ushort(self.data, "content_is_some_kind_of_other_format")      
-
-        # I HAVE NO IDEA WHYYY????
-        if self.data["content_is_some_kind_of_other_format"] != 0:
-            self.def_ulong(self.data, "content_extra_int1")
-            self.def_ulong(self.data, "content_extra_int2")
-
-        self.def_ulong(self.data, "content_verified_offset_from_here_to_deadbeef")
-        
-        # Verify deadbeef offset
-        if self.do_decode:
-            offset = self.data["content_verified_offset_from_here_to_deadbeef"]
-            deadbeef = self.stream[offset:offset+4]
-            assert deadbeef == b"\xef\xbe\xad\xde"
-
-        # Now the LMA file content (This header is checked in CheckLMAHeader())
-        self.def_string(self.data, "LMA_string", 4)         # This string is compared one by one in the source code, it must be "LMA "
-        self.def_byte(self.data, "LMA_byte1")               # This byte must be 1. This byte is assigned to eCWrapper_emfx2Motion + 0x24
-        self.def_byte(self.data, "LMA_byte2")               # This byte is unknown (usually 1). This byte is assigned to eCWrapper_emfx2Motion + 0x28
-        self.def_byte(self.data, "LMA_byte3")               # This byte must be 0
-
-        if self.do_decode:
-            self.data["assets"] = []
-            i = 1
-            while True:
-                self.data["assets"].append({})
-                type = self.def_asset(self.data["assets"][-1])
-                if type == AnimationType.DEADBEEF:  # Check if we reached the end
-                    self.data["assets"].pop()
-                    break
-                i += 1
-        else:
-            for asset in self.data["assets"]:
-                self.def_asset(asset)
-
-        self.def_enum_int(self.data, "genom_deadbeef", AnimationType)
-
-        self.def_padding(self.data, "genom_unparsed_data", len(self.stream))
-        self.is_decoded = True # If it was decoded at least once
+class ChunkType(Enum):
+    MotionPart = 1
+    Animation = 2
     
-    def peek_object_type(self, target):
-        return self.peek_enum_int(target, "type", AnimationType)
+def unpack(fmt, data):
+    chunksize = struct.calcsize(fmt)
+    chunk = data[:chunksize]
+    data = data[chunksize:]
+    return struct.unpack(fmt, chunk), data
+
+def unpack_str(data, length):
+    value = data[:length].decode("latin-1")
+    data = data[length:]
+    return value, data
+
+def unpack_uint8(data):
+    value, data = unpack('<B', data)
+    return value[0], data
+
+def unpack_uint16(data):
+    value, data = unpack('<H', data)
+    return value[0], data
+
+def unpack_uint32(data):
+    value, data = unpack('<I', data)
+    return value[0], data
+
+def pack(fmt, data):
+    return struct.pack(fmt, *data)
+
+def pack_str(data):
+    return data.encode("latin-1")
+
+def pack_uint8(data):
+    return pack('<B', [data])
+
+def pack_uint16(data):
+    return pack('<H', [data])
+
+def pack_uint32(data):
+    return pack('<I', [data])
     
-    def def_object_type(self, target):
-        return self.def_enum_int(target, "type", AnimationType)
+def decode_MotionPartChunk_V3(content):
+    output = {}
 
-    def def_label(self, target):
-        self.def_ulong(target, "label_length")
-        self.def_string(target, "label", target["label_length"])
+    # output["matrix"] = [{}, {}, {}]
+    # output["matrix"][0] = struct.unpack('<fff', content[:12])
+    # output["matrix"][1] = struct.unpack('<fff', content[12:24])
+    # output["matrix"][2] = struct.unpack('<fff', content[24:36])
+    # output["aftermat"] = struct.unpack('<f', content[36:40])
 
-    def def_three_vector_asset(self, target):
-        self.def_ulong(target, "n5")
-        self.def_ulong(target, "n6")
-        self.def_float_vector(target, "vec1", 3)
-        self.def_float_vector(target, "vec2", 3)
-        self.def_float_vector(target, "vec3", 4)
-        self.def_ulong(target, "n10")
-        self.def_padding(target, "pad1", 4)
-        self.def_ulong(target, "int1")
-        self.def_padding(target, "pad2", 8)
-        self.def_ulong(target, "int2")
-        self.def_padding(target, "pad3", 16)
-        self.def_label(target)
+    output["vec"] = struct.unpack('<fff', content[:12])
+    output["position"] = struct.unpack('<fff', content[12:24])
+    output["rotation"] = struct.unpack('<ffff', content[24:40])
 
-    def def_frame_asset(self, target):
-        self.def_ulong(target, "val2")
-        self.def_ulong(target, "val3")
-        self.def_ulong(target, "frame_count")
-        self.def_string(target, "frame_type", 2)
-        self.def_padding(target, "ll_padding", 2)
-        if (target["frame_type"] == "LR" ):
-            self.def_float_matrix(target, "frames", target["frame_count"], 5)
-        else:
-            self.def_float_matrix(target, "frames", target["frame_count"], 4)
+    output["n10"] = struct.unpack('<I', content[40:44])[0]
+    output["pad1"] = content[44:48]
+    output["int1"] = struct.unpack('<I', content[48:52])[0]
+    output["pad2"] = content[52:60]
+    output["int2"] = struct.unpack('<I', content[60:64])[0]
+    output["pad3"] = content[64:80]
+    label_length = struct.unpack('<I', content[80:84])[0]
+    output["label"] = content[84:84+label_length].decode("latin-1")
+    return output
 
-    def def_asset(self, target):
-        object_type = self.peek_object_type(target)
-        if object_type == AnimationType.ANIMATION_VECTORS:
-            self.def_object_type(target)
-            self.def_three_vector_asset(target)
-        elif object_type == AnimationType.ANIMATION_FRAMES:
-            self.def_object_type(target)
-            self.def_frame_asset(target)
-        elif self.do_decode and object_type == AnimationType.DEADBEEF: # This deadbeef branch will only be encountered when decoding
-            pass
-        else:
-            raise Exception(f"Unknown type {object_type}")
+def encode_MotionPartChunk_V3(data):
+    output = b""
+
+    # output += struct.pack('<fff', *data["matrix"][0])
+    # output += struct.pack('<fff', *data["matrix"][1])
+    # output += struct.pack('<fff', *data["matrix"][2])
+    # output += struct.pack('<f', *data["aftermat"])
+
+    output += struct.pack('<fff', *data["vec"])
+    output += struct.pack('<fff', *data["position"])
+    output += struct.pack('<ffff', *data["rotation"])
+
+    output += struct.pack('<I', data["n10"])
+    output += data["pad1"]
+    output += struct.pack('<I', data["int1"])
+    output += data["pad2"]
+    output += struct.pack('<I', data["int2"])
+    output += data["pad3"]
+    output += struct.pack('<I', len(data["label"]))
+    output += data["label"].encode("latin-1")
+    return output
+
+def decode_AnimationChunk_V1(content):
+    output = {}
+    output["frame_count"] = struct.unpack('<I', content[:4])[0]
+    output["frame_type"] = content[4:6].decode("latin-1")
+    output["ll_padding"] = content[6:8]
+    output["keyframes"] = []
+
+    keyframe_source = content[8:]
+    if output["frame_type"] == "LR":
+        for _ in range(0, output["frame_count"]):
+            output["keyframes"].append({ "rotation": {} })
+            keyframe = output["keyframes"][-1]
+            keyframe["time"] = struct.unpack('<f', keyframe_source[0:4])[0]
+            keyframe["rotation"]["x"] = struct.unpack('<f', keyframe_source[4:8])[0]
+            keyframe["rotation"]["y"] = struct.unpack('<f', keyframe_source[8:12])[0]
+            keyframe["rotation"]["z"] = struct.unpack('<f', keyframe_source[12:16])[0]
+            keyframe["rotation"]["w"] = struct.unpack('<f', keyframe_source[16:20])[0]
+            keyframe_source = keyframe_source[20:]
+    elif output["frame_type"] == "LP":
+        for _ in range(0, output["frame_count"]):
+            output["keyframes"].append({ "position": {} })
+            keyframe = output["keyframes"][-1]
+            keyframe["time"] = struct.unpack('<f', keyframe_source[0:4])[0]
+            keyframe["position"]["x"] = struct.unpack('<f', keyframe_source[4:8])[0]
+            keyframe["position"]["y"] = struct.unpack('<f', keyframe_source[8:12])[0]
+            keyframe["position"]["z"] = struct.unpack('<f', keyframe_source[12:16])[0]
+            keyframe_source = keyframe_source[16:]
+    else:
+        raise Exception(f"Unknown frame type {output['frame_type']}")
+    
+    return output
+
+def encode_AnimationChunk_V1(data):
+    output = b""
+    output += struct.pack('<I', data["frame_count"])
+    output += data["frame_type"].encode("latin-1")
+    output += data["ll_padding"]
+
+    if data["frame_type"] == "LR":
+        for keyframe in data["keyframes"]:
+            output += struct.pack('<f', keyframe["time"])
+            output += struct.pack('<f', keyframe["rotation"]["x"])
+            output += struct.pack('<f', keyframe["rotation"]["y"])
+            output += struct.pack('<f', keyframe["rotation"]["z"])
+            output += struct.pack('<f', keyframe["rotation"]["w"])
+    elif data["frame_type"] == "LP":
+        for keyframe in data["keyframes"]:
+            output += struct.pack('<f', keyframe["time"])
+            output += struct.pack('<f', keyframe["position"]["x"])
+            output += struct.pack('<f', keyframe["position"]["y"])
+            output += struct.pack('<f', keyframe["position"]["z"])
+    else:
+        raise Exception(f"Unknown frame type {data['frame_type']}")
+    
+    return output
+    
+def decode_chunk(content, chunk_type, chunk_version):
+    if chunk_type == ChunkType.MotionPart.name and chunk_version == 3:
+        return decode_MotionPartChunk_V3(content)
+    elif chunk_type == ChunkType.Animation.name and chunk_version == 1:
+        return decode_AnimationChunk_V1(content)
+    else:
+        raise Exception(f"Unknown chunk id {chunk_type} with version {chunk_version}")
+
+def encode_chunk(content, chunk_type, chunk_version):
+    if chunk_type == ChunkType.MotionPart.name and chunk_version == 3:
+        return encode_MotionPartChunk_V3(content)
+    elif chunk_type == ChunkType.Animation.name and chunk_version == 1:
+        return encode_AnimationChunk_V1(content)
+    else:
+        raise Exception(f"Unknown chunk id {chunk_type} with version {chunk_version}")
+    
+def decode_lma(content):
+    output = {}
+
+    assert content[:4] == b"LMA "
+    output["LMA_byte1"] = content[4]
+    output["LMA_byte2"] = content[5]
+    output["LMA_byte3"] = content[6]
+
+    src = content[7:]
+    chunks = []
+    while len(src) > 0:
+        chunk = {}
+        chunk_id, src = unpack_uint32(src)
+        chunk["chunk_type"] = ChunkType(chunk_id).name
+        chunk_size, src = unpack_uint32(src)
+        chunk["chunk_version"], src = unpack_uint32(src)
+        chunk["chunk_content"] = decode_chunk(src[:chunk_size],
+                                              chunk["chunk_type"],
+                                              chunk["chunk_version"])
+        chunks.append(chunk)
+        src = src[chunk_size:]
+
+    output["chunks"] = chunks
+
+    return output
+
+def encode_lma(data):
+    output = b"LMA "
+    output += struct.pack('<b', data["LMA_byte1"])
+    output += struct.pack('<b', data["LMA_byte2"])
+    output += struct.pack('<b', data["LMA_byte3"])
+
+    for chunk in data["chunks"]:
+        new_chunk = encode_chunk(chunk["chunk_content"],
+                               chunk["chunk_type"],
+                               chunk["chunk_version"])
+        output += pack_uint32(ChunkType[chunk["chunk_type"]].value)
+        output += pack_uint32(len(new_chunk))
+        output += pack_uint32(chunk["chunk_version"])
+        output += new_chunk
         
-        return object_type
+    return output
 
-    def def_padding(self, target, member_name, bytes):
-        if self.do_decode:                                 # Remove and remember said number of bytes
-            target[member_name] = self.stream[:bytes]
-            self.stream = self.stream[bytes:]
-        else:                                           # Put them back into place
-            self.stream = self.stream + target[member_name]
-            
-    def def_string(self, target, member_name, num_characters):
-        if self.do_decode:                                 # Read the string
-            binary = self.stream[:num_characters]
-            try:
-                target[member_name] = binary.decode("latin-1")
-            except:
-                raise Exception(f"Could not decode string {member_name}: {binary}")
-            self.stream = self.stream[num_characters:]
-        else:                                           # Write the string
-            self.stream = self.stream + target[member_name].encode("latin-1")
+def decode_file_content(content):
+    output = {}
+    output["content_int1"] = struct.unpack('<I', content[:4])[0]
+    output["content_pad2"] = content[4:6]
+    output["content_string1"] = content[6:10].decode("latin-1")
+    output["content_pad7"] = content[10:30]
+    output["content_is_some_kind_of_other_format"] = struct.unpack('<H', content[30:32])[0]
 
-    def def_struct(self, target, member_name, struct_format):
-        if self.do_decode:                                 # Read the struct
-            target[member_name] = struct.unpack(struct_format, self.stream[:struct.calcsize(struct_format)])[0]
-            self.stream = self.stream[struct.calcsize(struct_format):]
-        else:                                           # Write the struct
-            self.stream = self.stream + struct.pack(struct_format, target[member_name])
+    index = 32
+    if output["content_is_some_kind_of_other_format"] != 0:
+        output["content_extra_int1"] = struct.unpack('<I', content[32:36])[0]
+        output["content_extra_int2"] = struct.unpack('<I', content[36:40])[0]
+        index = 40
 
-    def def_byte(self, target, member_name):
-        self.def_struct(target, member_name, '<b')
+    lma_filesize = struct.unpack('<I', content[index:index+4])[0]
+    assert lma_filesize == len(content[index+4:])
+    output["lma_file"] = decode_lma(content[index+4:index+4+lma_filesize])
 
-    def def_ubyte(self, target, member_name):
-        self.def_struct(target, member_name, '<B')
+    return output
 
-    def def_short(self, target, member_name):
-        self.def_struct(target, member_name, '<h')
+def encode_file_content(content):
+    output = b""
+    output += struct.pack('<I', content["content_int1"])
+    output += content["content_pad2"]
+    output += content["content_string1"].encode("latin-1")
+    output += content["content_pad7"]
+    output += struct.pack('<H', content["content_is_some_kind_of_other_format"])
 
-    def def_ushort(self, target, member_name):
-        self.def_struct(target, member_name, '<H')
+    if content["content_is_some_kind_of_other_format"] != 0:
+        output += struct.pack('<I', content["content_extra_int1"])
+        output += struct.pack('<I', content["content_extra_int2"])
 
-    def def_long(self, target, member_name):
-        self.def_struct(target, member_name, '<i')
+    lma = encode_lma(content["lma_file"])
+    output += struct.pack('<I', len(lma))
+    output += lma
+    return output
 
-    def def_ulong(self, target, member_name):
-        self.def_struct(target, member_name, '<I')
+def decode(original_data):
+    output = {}
+    header = original_data
 
-    def def_float(self, target, member_name):
-        self.def_struct(target, member_name, '<f')
+    # First parse the Genome file format
+    genomfle, header = unpack_str(header, 8)
+    assert genomfle == "GENOMFLE"
+    output["file_version"], header = unpack_uint16(header)
+    deadbeef_index, header = unpack_uint32(header)
 
-    def peek_enum_int(self, target, member_name, enum):
-        if self.do_decode:
-            int = struct.unpack('<I', self.stream[:4])[0]
-            return enum(int)
-        else:
-            return enum[target[member_name]]
+    # Verify the DEADBEEF value
+    assert original_data[deadbeef_index:deadbeef_index+4] == b"\xef\xbe\xad\xde"
 
-    def def_enum_int(self, target, member_name, enum):
-        if self.do_decode:                                 # Read the unsigned enum int
-            int = struct.unpack('<I', self.stream[:4])[0]
-            target[member_name] = enum(int).name
-            self.stream = self.stream[4:]
-            return enum(int)
-        else:                                           # Write the unsigned enum int
-            string = target[member_name]
-            self.stream = self.stream + struct.pack('<I', enum[string].value)
-            return enum[string]
+    # Now parse the file content
+    output["content"] = decode_file_content(original_data[GENOM_HEADER_LENGTH:deadbeef_index])
 
-    def def_float_matrix(self, target, member_name, frames, valuesPerFrame):
-        if self.do_decode:                                 # Read the float matrix
-            matrix = []
-            for i in range(0, frames):
-                frame = []
-                for j in range(0, valuesPerFrame):
-                    val, self.stream = struct.unpack('<f', self.stream[:4])[0], self.stream[4:]
-                    frame.append(val)
-                matrix.append(frame)
-            target[member_name] = matrix
-        else:                                           # Write the float matrix
-            for i in range(0, frames):
-                for j in range(0, valuesPerFrame):
-                    self.stream = self.stream + struct.pack('<f', target[member_name][i][j])
+    # Now parse the appendix after the DEADBEEF value
+    appendix = original_data[deadbeef_index+4:]
+    output["appendix_version"], appendix = unpack_uint8(appendix)
+    output["appendix_count"], appendix = unpack_uint32(appendix)
+    output["appendix_elements"] = []
 
-    def def_float_vector(self, target, member_name, dimensions):
-        if self.do_decode:                                 # Read the float vector
-            vector = []
-            for i in range(0, dimensions):
-                val, self.stream = struct.unpack('<f', self.stream[:4])[0], self.stream[4:]
-                vector.append(val)
-            target[member_name] = vector
-        else:                                           # Write the float vector
-            for i in range(0, dimensions):
-                self.stream += struct.pack('<f', target[member_name][i])
+    for i in range(output["appendix_count"]):
+        length, appendix = unpack_uint16(appendix)
+        element, appendix = unpack_str(appendix, length)
+        output["appendix_elements"].append(element)
 
-    def printMatrix(matrix):
-        for frame in matrix:
-            str = "[ "
-            for val in frame:
-                str += f"{val:.6f}, "
-            str = str[:-2]
-            str += " ]"
-            print(str)
+    # Now that we're done, we do a self-check
+    assert original_data == encode(output)
+
+    return output
+
+def encode(data):
+    output = b"GENOMFLE"
+    output += pack_uint16(data["file_version"])
+
+    content = encode_file_content(data["content"])
+    output += pack_uint32(len(content) + GENOM_HEADER_LENGTH)
+    output += content
+    output += b"\xef\xbe\xad\xde"
+
+    output += pack_uint8(data["appendix_version"])
+    output += pack_uint32(data["appendix_count"])
+    for element in data["appendix_elements"]:
+        output += pack_uint16(len(element))
+        output += pack_str(element)
+        
+    return output

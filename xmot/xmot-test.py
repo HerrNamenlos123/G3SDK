@@ -22,10 +22,11 @@ os.system("cls")
 # xmot_file = "Hero_Parade_1H_1H_P1_PierceAttack_Hit_N_Fwd_00_%_00_P1_50_F.xmot"
 # xmot_file = "Hero_Parade_1H_1H_P0_PierceAttack_Raise_N_Fwd_00_%_00_P0_0_F.xmot"
 # xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Ambient_N_Fwd_00_%_00_P0_0.xmot"
-xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot"
 
-x = xmot.XMot(xmot_file)
-data = x.decode()
+xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot" # < This one works
+
+with io.open(xmot_file, "rb") as f:
+    data = xmot.decode(f.read())
 
 with io.open("xmot.json", "w") as f:
     f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
@@ -40,14 +41,14 @@ with io.open("xmot.json", "w") as f:
 # print(f"{byte_at(x.original_file_content, 0x0c)} = loop length")
 # print(f"{x.original_file_content[0x14:0x18]} = first int")
 
-for i in range(len(data["assets"])):
-    if data["assets"][i]["type"] == "ANIMATION_FRAMES":
-        for frame in range(len(data["assets"][i]["frames"])):
-            if data["assets"][i]["frame_type"] == "LR":
-                data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random(), random.random() ]
-            else:
-                data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random() ]
-            pass
+# for i in range(len(data["assets"])):
+#     if data["assets"][i]["type"] == "ANIMATION_FRAMES":
+#         for frame in range(len(data["assets"][i]["frames"])):
+#             if data["assets"][i]["frame_type"] == "LR":
+#                 data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random(), random.random() ]
+#             else:
+#                 data["assets"][i]["frames"][frame] = [ random.random(), random.random(), random.random(), random.random() ]
+#             pass
 
 # print(x.original_file_content)
 print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
@@ -60,7 +61,7 @@ print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
 
 
 
-result = x.encode(data)
+result = xmot.encode(data)
 
 def p(file):
     with io.open(file, "rb") as f:
