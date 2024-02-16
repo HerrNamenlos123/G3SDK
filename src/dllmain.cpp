@@ -8,6 +8,7 @@
 #include "framework.h"
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
+#include "Script.h"
 
 std::shared_ptr<spdlog::logger> logger;
 bool _log = false;
@@ -641,37 +642,43 @@ void init() {
     LOG("Calling original done");*/
 }
 
+void attach() {
+    AllocConsole();
+    freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
+    std::cout << "Hello from the G3 Hacker!" << std::endl;
+
+    logger = spdlog::basic_logger_mt("G3", "logs/last.txt", true);
+
+    LOG("Attaching detouring");
+    DetourRestoreAfterWith();
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    detour(false);
+    DetourTransactionCommit();
+
+    LOG("Attached detouring");
+    init();
+
+    if (!glfwInit()) {
+        MessageBoxA(nullptr, "GLFW failed to initialize!", "Failure", MB_OK);
+        return;
+    }
+}
+
+gSScriptInit& GetScriptInit() {
+    static gSScriptInit s_ScriptInit;
+    return s_ScriptInit;
+}
+
+extern "C" __declspec(dllexport) gSScriptInit const* GE_STDCALL ScriptInit(void) {
+
+    return &GetScriptInit();
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
-            AllocConsole();
-            freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
-            std::cout << "Hello from the G3 Hacker!" << std::endl;
-
-            
-            logger = spdlog::basic_logger_mt("G3", "logs/last.txt", true);
-
-            LOG("Attaching detouring");
-            DetourRestoreAfterWith();
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            detour(false);
-            DetourTransactionCommit();
-
-            LOG("Attached detouring");
-            init();
-
-            if (!glfwInit()) {
-                MessageBoxA(nullptr, "GLFW failed to initialize!", "Failure", MB_OK);
-                return false;
-            }
-
-            break;
-
-        case DLL_THREAD_ATTACH:
-            break;
-
-        case DLL_THREAD_DETACH:
+            attach();
             break;
 
         case DLL_PROCESS_DETACH:

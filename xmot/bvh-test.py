@@ -1,5 +1,6 @@
 from math import sin
 import bvhio # pip install bvhio (THIS NEEDS PYTHON 3.11!!!!!)
+# import bvh # pip install bvh # This is wrong!!! It can only read, but not write!!!
 import json
 import glm
 
@@ -94,10 +95,10 @@ for section in sections:
             z = section["chunk"]["chunk_content"]["rotation"][2]
             w = section["chunk"]["chunk_content"]["rotation"][3]
 
-            x = 10
+            x = 0.9950372
             y = 0
             z = 0
-            w = 1
+            w = 0.0995037
 
             # x = sin(3 * time)*3
 
@@ -125,6 +126,10 @@ for section in sections:
             z = map(time, lower["time"], upper["time"], lower["position"]["z"], upper["position"]["z"])
 
             section["position"]["new_keyframes"].append([time, x / 1000, y / 1000, z / 1000])
+
+
+
+
 
 
 # Loads the file into a deserialized tree structure.
@@ -157,8 +162,8 @@ for joint, index, depth in bvh.Root.layout():
         for frame in range(frameCount):
             rot = section["rotation"]["new_keyframes"][frame][1:]
             quat = glm.quat(rot[3], rot[0], rot[1], rot[2])
-            print(quat)
             joint.Keyframes[frame].Rotation = quat 
+            print(bvhio.Euler.fromQuatTo(joint.Keyframes[frame].Rotation))
     if section["position"]:
         for frame in range(frameCount):
             joint.Keyframes[frame].Position = section["position"]["new_keyframes"][frame][1:]
@@ -170,3 +175,4 @@ for joint, index, depth in bvh.Root.layout():
 
 # Stores the modified bvh
 bvhio.writeBvh('untitled-modified.bvh', bvh, percision=6)
+

@@ -23,6 +23,8 @@ os.system("cls")
 # xmot_file = "Hero_Parade_1H_1H_P0_PierceAttack_Raise_N_Fwd_00_%_00_P0_0_F.xmot"
 # xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Ambient_N_Fwd_00_%_00_P0_0.xmot"
 
+# xmot_file = "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_02_%_00_P0_0.xmot"
+
 xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot" # < This one works
 
 with io.open(xmot_file, "rb") as f:
@@ -98,5 +100,5 @@ def output(file):
     with io.open(os.path.join(outdir, file), "wb") as f:
         f.write(result)
 
-output("Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot")
+# output("Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot")
 # output("")
