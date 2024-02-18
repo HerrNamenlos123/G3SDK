@@ -145,6 +145,11 @@ def unpack_uint32(data):
     value, data = unpack('<I', data)
     return value[0], data
 
+def unpack_bytes(data, length):
+    value = data[:length]
+    data = data[length:]
+    return value, data
+
 def pack(fmt, data):
     return struct.pack(fmt, *data)
 
@@ -159,6 +164,9 @@ def pack_uint16(data):
 
 def pack_uint32(data):
     return pack('<I', [data])
+
+def pack_bytes(data):
+    return data
     
 def decode_MotionPartChunk_V3(content):
     output = {}
@@ -169,16 +177,18 @@ def decode_MotionPartChunk_V3(content):
     # output["matrix"][2] = struct.unpack('<fff', content[24:36])
     # output["aftermat"] = struct.unpack('<f', content[36:40])
 
-    output["vec"] = struct.unpack('<fff', content[:12])
-    output["position"] = struct.unpack('<fff', content[12:24])
-    output["rotation"] = struct.unpack('<ffff', content[24:40])
+    output["position"] = struct.unpack('<fff', content[:12])
+    output["rotation"] = struct.unpack('<ffff', content[12:28])
+    output["scale"] = struct.unpack('<fff', content[28:40])
 
-    output["n10"] = struct.unpack('<I', content[40:44])[0]
-    output["pad1"] = content[44:48]
-    output["int1"] = struct.unpack('<I', content[48:52])[0]
-    output["pad2"] = content[52:60]
-    output["int2"] = struct.unpack('<I', content[60:64])[0]
-    output["pad3"] = content[64:80]
+    # output["n10"] = struct.unpack('<I', content[40:44])[0]
+    # output["pad1"] = content[44:48]
+    # output["int1"] = struct.unpack('<I', content[48:52])[0]
+    # output["pad2"] = content[52:60]
+    # output["int2"] = struct.unpack('<I', content[60:64])[0]
+    # output["pad3"] = content[64:80]
+    output["remaining"] = content[40:80]
+
     label_length = struct.unpack('<I', content[80:84])[0]
     output["label"] = content[84:84+label_length].decode("latin-1")
     return output
@@ -191,16 +201,18 @@ def encode_MotionPartChunk_V3(data):
     # output += struct.pack('<fff', *data["matrix"][2])
     # output += struct.pack('<f', *data["aftermat"])
 
-    output += struct.pack('<fff', *data["vec"])
     output += struct.pack('<fff', *data["position"])
     output += struct.pack('<ffff', *data["rotation"])
+    output += struct.pack('<fff', *data["scale"])
 
-    output += struct.pack('<I', data["n10"])
-    output += data["pad1"]
-    output += struct.pack('<I', data["int1"])
-    output += data["pad2"]
-    output += struct.pack('<I', data["int2"])
-    output += data["pad3"]
+    # output += struct.pack('<I', data["n10"])
+    # output += data["pad1"]
+    # output += struct.pack('<I', data["int1"])
+    # output += data["pad2"]
+    # output += struct.pack('<I', data["int2"])
+    # output += data["pad3"]
+    output += data["remaining"]
+
     output += struct.pack('<I', len(data["label"]))
     output += data["label"].encode("latin-1")
     return output
@@ -321,39 +333,39 @@ def encode_lma(data):
     return output
 
 def decode_file_content(content):
+    data = content
     output = {}
-    output["content_int1"] = struct.unpack('<I', content[:4])[0]
-    output["content_pad2"] = content[4:6]
-    output["content_string1"] = content[6:10].decode("latin-1")
-    output["content_pad7"] = content[10:30]
-    output["content_is_some_kind_of_other_format"] = struct.unpack('<H', content[30:32])[0]
+    output["content_int1"], data = unpack_uint32(data)
+    output["content_pad2"], data = unpack_bytes(data, 2)
+    output["content_string1"], data = unpack_str(data, 4)
+    output["content_pad7"], data = unpack_bytes(data, 20)
+    output["content_is_some_kind_of_other_format"], data = unpack_uint16(data)
 
-    index = 32
     if output["content_is_some_kind_of_other_format"] != 0:
-        output["content_extra_int1"] = struct.unpack('<I', content[32:36])[0]
-        output["content_extra_int2"] = struct.unpack('<I', content[36:40])[0]
-        index = 40
+        output["content_extra_int1"], data = unpack_uint32(data)
+        output["content_extra_int2"], data = unpack_uint32(data)
 
-    lma_filesize = struct.unpack('<I', content[index:index+4])[0]
-    assert lma_filesize == len(content[index+4:])
-    output["lma_file"] = decode_lma(content[index+4:index+4+lma_filesize])
+    lma_filesize, data = unpack_uint32(data)
+    lma_content = data
+    assert lma_filesize == len(lma_content)
+    output["lma_file"] = decode_lma(lma_content)
 
     return output
 
 def encode_file_content(content):
     output = b""
-    output += struct.pack('<I', content["content_int1"])
-    output += content["content_pad2"]
-    output += content["content_string1"].encode("latin-1")
-    output += content["content_pad7"]
-    output += struct.pack('<H', content["content_is_some_kind_of_other_format"])
+    output += pack_uint32(content["content_int1"])
+    output += pack_bytes(content["content_pad2"])
+    output += pack_str(content["content_string1"])
+    output += pack_bytes(content["content_pad7"])
+    output += pack_uint16(content["content_is_some_kind_of_other_format"])
 
     if content["content_is_some_kind_of_other_format"] != 0:
-        output += struct.pack('<I', content["content_extra_int1"])
-        output += struct.pack('<I', content["content_extra_int2"])
+        output += pack_uint32(content["content_extra_int1"])
+        output += pack_uint32(content["content_extra_int2"])
 
     lma = encode_lma(content["lma_file"])
-    output += struct.pack('<I', len(lma))
+    output += pack_uint32(len(lma))
     output += lma
     return output
 

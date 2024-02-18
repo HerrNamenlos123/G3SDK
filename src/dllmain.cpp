@@ -659,10 +659,10 @@ void attach() {
     LOG("Attached detouring");
     init();
 
-    if (!glfwInit()) {
+    /*if (!glfwInit()) {
         MessageBoxA(nullptr, "GLFW failed to initialize!", "Failure", MB_OK);
         return;
-    }
+    }*/
 }
 
 gSScriptInit& GetScriptInit() {
@@ -671,7 +671,7 @@ gSScriptInit& GetScriptInit() {
 }
 
 extern "C" __declspec(dllexport) gSScriptInit const* GE_STDCALL ScriptInit(void) {
-
+    attach();
     return &GetScriptInit();
 }
 
@@ -689,7 +689,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
             DetourTransactionCommit();
             spdlog::info("Detached detouring");
 
-            glfwTerminate();
+            //glfwTerminate();
             break;
     }
     return true;

@@ -5,6 +5,7 @@ project(G3Dll)
 
 # Gothic 3 installation folder
 set(GOTHIC3_DIR "C:/Program Files (x86)/Steam/steamapps/common/Gothic 3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gz")
 
 # All header files (needed to be listed in Visual Studio)
 set(HEADERS
@@ -52,20 +53,9 @@ set(GLFW_INSTALL OFF)
 add_subdirectory(glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
 
-# Import other external dependencies like EMotionFX
-#add_subdirectory(extern)
-
-# Import the import libs of Gothic itself
-target_include_directories(${PROJECT_NAME} PUBLIC ../gothic3sdk/source)
-#target_link_libraries(${PROJECT_NAME} ${GOTHIC3_DIR}/Engine.lib)
-#target_link_libraries(${PROJECT_NAME} ${GOTHIC3_DIR}/SharedBase.lib)
-target_link_directories(${PROJECT_NAME} PUBLIC ../gothic3sdk/lib)
-target_link_libraries(${PROJECT_NAME} SharedBase.lib)
-target_link_libraries(${PROJECT_NAME} Engine.lib)
-target_link_libraries(${PROJECT_NAME} Game.lib)
-target_link_libraries(${PROJECT_NAME} Script.lib)
-target_link_libraries(${PROJECT_NAME} GFC.lib)
-#target_link_libraries(${PROJECT_NAME} emotionfx)
+# Import gothic3sdk
+add_subdirectory(gothic3sdk)
+target_link_libraries(${PROJECT_NAME} gothic3sdk)
 
 # Properties of the DLL
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)			# C++17

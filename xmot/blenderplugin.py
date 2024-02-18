@@ -31,6 +31,7 @@ class ImportCustomFileOperator(bpy.types.Operator):
         frametime = 1/25
         framecount = 21
         bone_rotations = {}
+        resting_positions = {}
         sections = []
         for i in range(len(data['content']['lma_file']['chunks'])):
             chunk = data['content']['lma_file']['chunks'][i]
@@ -80,6 +81,7 @@ class ImportCustomFileOperator(bpy.types.Operator):
                 bone_name = section["chunk"]["chunk_content"]["label"]
                 chunk = section["chunk"]["chunk_content"]
                 bone_rotations[bone_name] = []
+                resting_positions[bone_name] = []
                 for i in range(framecount):
                     time = i * frametime
                     
@@ -105,13 +107,19 @@ class ImportCustomFileOperator(bpy.types.Operator):
                     pz = chunk["rotation"][2]
                     pw = chunk["rotation"][3]
                     
-                    x, y, z, w = x, y, z, w
-                    px, py, pz, pw = px, py, pz, pw
+                    ori = Quaternion((w, x, y, z))
+                    pori = Quaternion((pw, px, py, pz))
+                    ori = pori
                     
-                    res = Quaternion((pw, px, py, pz)) * Quaternion((w, x, y, z))
-                    res = Quaternion((-res.w, res.y, res.x, res.z))
+                    #resting_positions[bone_name].append(Quaternion((1, 0, 0, 0)))
+                    #bone_rotations[bone_name].append(ori.rotation_difference(pori))
+                    bone = armature.bones.get(bone_name)
+                    if not bone:
+                        raise Exception("Armature has no bone with label '" + bone_name + "'")
                     
-                    bone_rotations[bone_name].append(res)
+                    for framenum in range(framecount):
+                        bone.rotation_quaternion = ori
+                        bone.keyframe_insert(data_path="rotation_quaternion", frame=framenum)
 
             if section["position"]:                     # Interpolate position keyframes
                 section["position"]["new_keyframes"] = []
@@ -130,14 +138,16 @@ class ImportCustomFileOperator(bpy.types.Operator):
                     #section["position"]["new_keyframes"].append([time, x / 1000, y / 1000, z / 1000])
 
             
-        if obj.type == 'ARMATURE':
-            for bone in obj.pose.bones:
-                print(bone.name)
-                for framenum in range(framecount):
-                    if bone.name in bone_rotations:
-                        bpy.context.scene.frame_set(framenum)
-                        bone.rotation_quaternion = bone_rotations[bone.name][framenum]
-                        bone.keyframe_insert(data_path="rotation_quaternion", index=-1)  # -1 is for all quaternion components
+        #if obj.type == 'ARMATURE':
+            #for bone in obj.pose.bones:
+                #print(bone.name)
+                #for framenum in range(framecount):
+                    #if bone.name in bone_rotations:
+                        #bpy.context.scene.frame_set(framenum)
+                        #bone.matrix_basis.identity()
+                        #bone.matrix_basis.rotate(desired_quaternion)
+                        #bone.rotation_quaternion = bone_rotations[bone.name][framenum]
+                        #bone.keyframe_insert(data_path="rotation_quaternion", index=-1)  # -1 is for all quaternion components
                     
         bpy.context.scene.frame_end = framecount
         
