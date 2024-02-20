@@ -99,12 +99,6 @@ bCString EntityHook::GetDisplayName() const {
     return str;
 }
 
-bool MusicHook::TriggerFight() {
-    TRACE("");
-    return true;
-    //return (this->*TriggerFight_original)();
-}
-
 //const bCString& __thiscall eCVisualAnimationFactory::GetMainActorFileName() const {
 //    TRACE("");
 //    return (this->*f.eCVisualAnimationFactory_GetMainActorFileName)();

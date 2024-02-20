@@ -64,9 +64,52 @@ public:
 
 class MusicHook {
 public:
-    bool TriggerFight();
+    bool TriggerExplore() {
+        TRACE("");
+        return (this->*TriggerExplore_original)();
+    }
 
+    bool TriggerFight() {
+        TRACE("");
+        //return true;
+        return (this->*TriggerFight_original)();
+    }
+
+    bool TriggerRevolution() {
+        TRACE("");
+        return (this->*TriggerRevolution_original)();
+    }
+
+    bool TriggerShowdown() {
+        TRACE("");
+        return (this->*TriggerShowdown_original)();
+    }
+
+    bool TriggerSituation(const bCString& str) {
+        TRACE("str = {}", str);
+        return (this->*TriggerSituation_original)(str);
+    }
+
+    bool TriggerVictory() {
+        TRACE("");
+        return (this->*TriggerVictory_original)();
+    }
+
+    DETOUR_DECLARE_MEMBER(TriggerExplore, "Script.dll", "?TriggerExplore@Music@@QAE_NXZ")
     DETOUR_DECLARE_MEMBER(TriggerFight, "Script.dll", "?TriggerFight@Music@@QAE_NXZ")
+    DETOUR_DECLARE_MEMBER(TriggerRevolution, "Script.dll", "?TriggerRevolution@Music@@QAE_NXZ")
+    DETOUR_DECLARE_MEMBER(TriggerShowdown, "Script.dll", "?TriggerShowdown@Music@@QAE_NXZ")
+    DETOUR_DECLARE_MEMBER(TriggerSituation, "Script.dll", "?TriggerSituation@Music@@QAE_NABVbCString@@@Z")
+    DETOUR_DECLARE_MEMBER(TriggerVictory, "Script.dll", "?TriggerVictory@Music@@QAE_NXZ")
+
+    static void detour(bool detach) {
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerExplore);
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerFight);
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerRevolution);
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerShowdown);
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerSituation);
+        DETOUR_EXTERN_MEMBER(MusicHook, TriggerVictory);
+    }
 };
 
 static void detour(bool detach) {
@@ -79,7 +122,8 @@ static void detour(bool detach) {
     DETOUR_EXTERN_MEMBER(eCWrapper_emfx2MotionHook, LoadMotion);
     DETOUR_EXTERN_MEMBER(EntityHook, DoDamage);
     DETOUR_EXTERN_MEMBER(EntityHook, GetDisplayName);
-    DETOUR_EXTERN_MEMBER(MusicHook, TriggerFight);
+
+    MusicHook::detour(detach);
 
     //DETOUR_EXTERN_MEMBER(eCVisualAnimation_PS, PlayMotion, "Engine.dll", "?PlayMotion@eCVisualAnimation_PS@@QAEXW4eEMotionType@eCWrapper_emfx2Actor@@PAUeSMotionDesc@eCWrapper_emfx2Motion@@@Z");
     //DETOUR_EXTERN_MEMBER(eCVisualAnimationLoD, Read, "Engine.dll", "?Read@eCVisualAnimationLoD@@UAE?AW4bEResult@@AAVbCIStream@@@Z");

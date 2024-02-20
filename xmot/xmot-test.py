@@ -30,9 +30,6 @@ xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot" # < Th
 with io.open(xmot_file, "rb") as f:
     data = xmot.decode(f.read())
 
-with io.open("xmot.json", "w") as f:
-    f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
-
 # os.system("notepad xmot.json")
 
 # with io.open("xmot.json", "r") as f:
@@ -53,7 +50,7 @@ with io.open("xmot.json", "w") as f:
 #             pass
 
 # print(x.original_file_content)
-print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
+#print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
 # print(x.data["assets"][4])
 # x.data["assets"][4]["vec1"] = [ 1, 2, 3 ]
 # x.data["assets"][4]["vec2"] = [ 4, 5, 6 ]
@@ -61,6 +58,84 @@ print(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
 
 
 
+# for chunk in data["content"]["lma_file"]["chunks"]:
+#     if chunk["chunk_type"] == "MotionPart":
+#         if chunk["chunk_content"]["label"] == "Hero_Spine_Spine_1":
+#             chunk["chunk_content"]["position"] = [ 0, 0, 0 ]
+
+# rem = {}
+# # Delete the chunk after Hero_Spine_Spine_1
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
+#         rem = data["content"]["lma_file"]["chunks"][i]["chunk_content"]["remaining"]
+#         if data["content"]["lma_file"]["chunks"][i]["chunk_content"]["label"] == "Hero_Spine_Spine_1":
+#             del data["content"]["lma_file"]["chunks"][i+1]
+#             break
+
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
+#         if data["content"]["lma_file"]["chunks"][i]["chunk_content"]["label"] == "Hero_Right_Arm_Arm_1":
+#             del data["content"]["lma_file"]["chunks"][i]
+#             del data["content"]["lma_file"]["chunks"][i+1]
+#             break
+
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
+#         if data["content"]["lma_file"]["chunks"][i]["chunk_content"]["label"] == "Hero_Right_Arm_Arm_2":
+#             del data["content"]["lma_file"]["chunks"][i]
+#             del data["content"]["lma_file"]["chunks"][i+1]
+#             break
+
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     chunk = data["content"]["lma_file"]["chunks"][i]
+#     if chunk["chunk_type"] == "MotionPart":
+#         if chunk["chunk_content"]["label"] == "Hero":
+#             chunk["chunk_content"]["position"] = [ 5, 0, 0 ]
+
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     chunk = data["content"]["lma_file"]["chunks"][i]
+#     if chunk["chunk_type"] == "MotionPart":
+#         if chunk["chunk_content"]["label"] == "Hero_ROOT":
+#             chunk["chunk_content"]["position"] = [ 5, 0, 0 ]
+
+# for y in range(1, 10):
+#     for i in range(len(data["content"]["lma_file"]["chunks"])):
+#         chunk = data["content"]["lma_file"]["chunks"][i]
+#         if chunk["chunk_type"] == "MotionPart":
+#             if "Layer_" in chunk["chunk_content"]["label"]:
+#                 del data["content"]["lma_file"]["chunks"][i]
+#                 break
+
+# o = {
+#                     "chunk_type": "MotionPart",
+#                     "chunk_version": 3,
+#                     "chunk_content": {
+#                         "position": [
+#                             2,
+#                             2,
+#                             2
+#                         ],
+#                         "rotation": [
+#                             0.0,
+#                             0.0,
+#                             0.0,
+#                             0.0,
+#                         ],
+#                         "scale": [
+#                             1.0,
+#                             1.0,
+#                             1.0
+#                         ],
+#                         "remaining": rem,
+#                         "label": "Hero_Spine_Spine_ROOT"
+#                     }
+#                 }
+
+# print(o)
+# data["content"]["lma_file"]["chunks"].append(o)
+
+with io.open("xmot.json", "w") as f:
+    f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
 
 
 result = xmot.encode(data)
@@ -100,5 +175,6 @@ def output(file):
     with io.open(os.path.join(outdir, file), "wb") as f:
         f.write(result)
 
+output("C:/Program Files (x86)/Steam/steamapps/common/Gothic 3/Data/_compiledAnimation/Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot")
 # output("Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot")
 # output("")
