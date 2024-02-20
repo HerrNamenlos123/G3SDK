@@ -4,21 +4,97 @@ import json
 from mathutils import Quaternion, Vector, Matrix
 import mathutils
 
+FRAMETIME = 0.04
+
+class GenomeBone:
+    def __init__(self):
+        self.name = None
+        self.resting_pos = None
+        self.resting_rot = None
+        self.keyframes = []
+
+GenomeBones = []
+def getGenomeBone(name):
+    for bone in GenomeBones:
+        if bone.name == name:
+            return bone
+    return None
+
+def calculate_local_matrix(bone):
+    if bone is None:
+        return Matrix.Identity(4)
+          
+    vec = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2]))
+    quat = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
+    
+    local_matrix = quat.to_matrix().to_4x4()
+    local_matrix.translation = vec / 100
+    return local_matrix
+
+class Frame:
+    def __init__(self):
+        self.time = 0
+        self.position = None
+        self.rotation = None
+
 class BoneNode:
-    __init__(self, edit_bones = None, parent = None):
+    def __init__(self):
         self.children = []
-        self.parent = parent
+        self.name = None
+        self.parent = None
         self.genome_vec = None
         self.genome_quat = None
-        self.edit_matrix = None
-        self.edit_bone = None
-        self.pose_bone = None
-        if edit_bones is not None:
-            self.build_bone_tree()
+        self.genomeBone = None
+        self.root_matrix = None
+        self.resting_diff_inv = None
+        self.global_resting_matrix = None # The global matrix from Edit mode
+        self.startpose_matrix = None      # The local matrix for Pose mode
+        self.local_matrix_keyframes = []  # The local matrix for Pose mode
     
-    def build_bone_tree(self):
-        self.build_bone_tree()
-
+    def apply(self, bones):
+        posebone = bones.get(self.name)
+        if self.startpose_matrix:
+            posebone.matrix_basis = self.startpose_matrix
+        #posebone.keyframe_insert(data_path="matrix", frame=0)
+        
+        if self.genomeBone:
+            for f in self.genomeBone.keyframes:
+                framenum = round(f.time / FRAMETIME)
+                if (framenum > bpy.context.scene.frame_end):
+                    bpy.context.scene.frame_end = framenum
+                #posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
+                #posebone.keyframe_insert(data_path="matrix", frame=framenum)
+        
+        for child in self.children:
+            child.apply(bones)
+    
+def build_bone_tree(bone, editbone, parent = None):
+    bone.name = editbone.name
+    bone.parent = parent
+    bone.global_resting_matrix = editbone.matrix
+    
+    genomeBone = getGenomeBone(bone.name)
+    if bone.parent:
+        bone.resting_diff_inv = (bone.parent.global_resting_matrix.inverted() @ bone.global_resting_matrix).inverted()
+    else:
+        bone.resting_diff_inv = Matrix.Identity(4)
+        
+    if bone.root_matrix:
+        bone.resting_diff_inv = bone.root_matrix @ bone.resting_diff_inv
+        
+    if genomeBone:
+        bone.genome_quat = genomeBone.resting_rot
+        bone.genome_vec = genomeBone.resting_pos
+        bone.genomeBone = genomeBone
+        bone.startpose_matrix = bone.resting_diff_inv @ calculate_local_matrix(bone)
+    else:
+        bone.genome_quat = [0, 0, 0, 1]
+        bone.genome_vec = [0, 0, 0]
+        bone.startpose_matrix = bone.resting_diff_inv @ calculate_local_matrix(bone)
+    
+    for next in editbone.children:
+        bone.children.append(BoneNode())
+        build_bone_tree(bone.children[-1], next, bone)
 
 def do():
     file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\G3_Hero_Body_Player.3db"
@@ -37,21 +113,29 @@ def do():
         file = f.read()
         data = json.loads(file)
 
-    # We want this frametime and that many frames
-    frametime = 1/25
-    framecount = 21
-    bone_rotations = {}
-    resting_positions = {}
-    sections = []
     for i in range(len(data['content']['lma_file']['chunks'])):
         chunk = data['content']['lma_file']['chunks'][i]
         if chunk["chunk_type"] == "Animation":      # This asset is a frame asset, so we merge it into the last asset, which was a MotionPart
             if chunk["chunk_content"]["frame_type"] == "LR":          # Rotation asset
-                sections[-1]["rotation"] = chunk
+                bone = GenomeBones[-1]
+                for i in range(chunk["chunk_content"]["frame_count"]):
+                    frame = Frame()
+                    frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
+                    frame.rotation = chunk["chunk_content"]["keyframes"][i]["rotation"]
+                    bone.keyframes.append(frame)
             elif chunk["chunk_content"]["frame_type"] == "LP":        # Position asset
-                sections[-1]["position"] = chunk
-        else: # A MotionPart
-            sections.append({ "chunk": chunk, "rotation": None, "position": None })
+                bone = GenomeBones[-1]
+                for i in range(chunk["chunk_content"]["frame_count"]):
+                    frame = Frame()
+                    frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
+                    frame.rotation = chunk["chunk_content"]["keyframes"][i]["position"]
+                    bone.keyframes.append(frame)
+        else: # A MotionPart: Create a new bone
+            bone = GenomeBone()
+            bone.name = chunk["chunk_content"]["label"]
+            bone.resting_pos = chunk["chunk_content"]["position"]
+            bone.resting_rot = chunk["chunk_content"]["rotation"]
+            GenomeBones.append(bone)
             
     
     def findTwoKeyframesToInterpolate(frames, time):
@@ -80,91 +164,21 @@ def do():
         if inMin == inMax:
             return outMin
         return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
-    
-    def calculate_global_matrix(bone):
-        if bone is None:
-            return Matrix.Identity(4)
-              
-        vec = Vector((bone["genome_vec"][1], bone["genome_vec"][0], bone["genome_vec"][2]))
-        quat = Quaternion((-bone["genome_quat"][3], bone["genome_quat"][1], bone["genome_quat"][0], bone["genome_quat"][2]))
-        
-        local_matrix = quat.to_matrix().to_4x4()
-        local_matrix.translation = vec / 100
-        
-        parent_global_matrix = calculate_global_matrix(bone["parent"])
-        global_matrix = parent_global_matrix @ local_matrix
-        return global_matrix
-
-    bones = {}
-    for section in sections:
-        chunk = section["chunk"]["chunk_content"]
-        label = chunk["label"]
-        bones[label] = {}
-        bones[label]["position"] = chunk["position"]
-        bones[label]["rotation"] = chunk["rotation"]
-    
-    def build_bone_tree(editbone, current_bone, root_matrix):
-        print("Building bone " + editbone.name)
-        current_bone["name"] = editbone.name
-        current_bone["editbone"] = editbone
-        current_bone["edit_matrix"] = editbone.matrix
-        
-        if current_bone["name"] not in bones:
-            current_bone["genome_quat"] = [0, 0, 0, 1]
-            current_bone["genome_vec"] = [0, 0, 0]
-            current_bone["pose_matrix"] = root_matrix.inverted() @ calculate_global_matrix(current_bone)
-            #current_bone["pose_matrix"] = Matrix.Identity(4)
-        else:
-            current_bone["genome_quat"] = bones[current_bone["name"]]["rotation"]
-            current_bone["genome_vec"] = bones[current_bone["name"]]["position"]
-            current_bone["pose_matrix"] = root_matrix.inverted() @ calculate_global_matrix(current_bone)
-        
-        if current_bone["parent"] is not None:
-            print(current_bone["parent"]["pose_matrix"])
-            current_bone["edit_diff"] = current_bone["parent"]["edit_matrix"].inverted() @ current_bone["edit_matrix"]
-            current_bone["pose_diff"] = current_bone["parent"]["pose_matrix"].inverted() @ current_bone["pose_matrix"]
-            current_bone["diff"] = current_bone["edit_diff"].inverted() @ current_bone["pose_diff"]
-            #editbone.matrix = current_bone["pose_matrix"]
-        else:
-            current_bone["edit_diff"] = Matrix.Identity(4)
-            current_bone["pose_diff"] = Matrix.Identity(4)
-            current_bone["diff"] = Matrix.Identity(4)
-            
-        #current_bone["diff"] = current_bone["edit_matrix"].inverted() @ current_bone["pose_matrix"]
-        #current_bone["diff"] = current_bone["diff"].to_3x3().to_4x4()
-        #current_bone["diff"] = Quaternion((1, 0.1, 0, 0)).to_matrix().to_4x4()
-        #editbone.matrix = Matrix.Identity(4)
-        #editbone.matrix = current_bone["pose_matrix"]
-        #if ("Hero_Right_Leg_Leg_2" in current_bone["name"]):
-            #print(current_bone["edit_matrix"])
-        #editbone.matrix = Matrix.Identity(4)
-        #editbone.matrix = Matrix.Rotation(math.radians(90), 4, 'X') @ editbone.matrix
-        
-        current_bone["children"] = []
-        for child in editbone.children:
-            current_bone["children"].append({})
-            current_bone["children"][-1]["parent"] = current_bone
-            build_bone_tree(child, current_bone["children"][-1], root_matrix)
-    
-    def apply_bone_tree(current_bone):
-        posebone = obj.pose.bones.get(current_bone["name"])
-        parent = current_bone["parent"]
-        posebone.matrix_basis = current_bone["diff"]
-        for child in current_bone["children"]:
-            apply_bone_tree(child)
             
     #return
     bpy.ops.object.mode_set(mode='EDIT')
-    root = BoneNode(obj.data.edit_bones)
+    
+    root = BoneNode()
+    root.root_matrix = Matrix.Rotation(math.radians(-90), 4, 'Y') @ Matrix.Rotation(math.radians(180), 4, 'X')
+    build_bone_tree(root, obj.data.edit_bones[0])
     #root_matrix = obj.data.edit_bones[0].matrix
     #root_matrix = Matrix.Identity(4)
     
     bpy.ops.object.mode_set(mode='POSE')
-    apply_bone_tree(root_bone)
+    bpy.context.scene.frame_end = 0
+    root.apply(obj.pose.bones)
 
     bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.context.view_layer.update()
-    bpy.context.scene.frame_end = framecount
 
 class ImportCustomFileOperator(bpy.types.Operator):
     """Import Custom File Format"""
