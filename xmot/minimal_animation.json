@@ -1,0 +1,100 @@
+{
+    "file_version": 1,
+    "content": {
+        "content_int1": 5,
+        "content_pad2": "0x0000",
+        "content_string1": "_Fig",
+        "content_pad7": "0x0048919a8d31c601c0730000000823a10200c601",
+        "content_is_some_kind_of_other_format": 2,
+        "content_extra_int1": 0,
+        "content_extra_int2": 65546,
+        "lma_file": {
+            "LMA_byte1": 1,
+            "LMA_byte2": 1,
+            "LMA_byte3": 0,
+            "chunks": [
+                {
+                    "chunk_type": "MotionPart",
+                    "chunk_version": 3,
+                    "chunk_content": {
+                        "position": [
+                            7.002952575683594,
+                            98.56818389892578,
+                            -15.803855895996094
+                        ],
+                        "rotation": [
+                            0.6516486406326294,
+                            0.7563916444778442,
+                            -0.057400330901145935,
+                            0.01577826589345932
+                        ],
+                        "scale": [
+                            1.0,
+                            1.000000238418579,
+                            1.000000238418579
+                        ],
+                        "remaining": "0x1449e02b02000000cc44d80088eac30018ffc3001465d100d3dfc500c848e02b98ebc30028f0c500",
+                        "label": "Hero_Spine_Spine_1"
+                    }
+                },
+                {
+                    "chunk_type": "Animation",
+                    "chunk_version": 1,
+                    "chunk_content": {
+                        "frame_count": 2,
+                        "frame_type": "LP",
+                        "ll_padding": "0xc600",
+                        "keyframes": [
+                            {
+                                "position": [
+                                    7.002952575683594,
+                                    98.56818389892578,
+                                    -15.803855895996094
+                                ],
+                                "time": 0
+                            },
+                            {
+                                "position": [
+                                    7.252416610717773,
+                                    98.50582885742188,
+                                    -15.97994613647461
+                                ],
+                                "time": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "chunk_type": "MotionPart",
+                    "chunk_version": 3,
+                    "chunk_content": {
+                        "position": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            0.0,
+                            1.0,
+                            0.0,
+                            7.549790126404332e-08
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "remaining": "0x1449e02b02000000cc44d80088eac30018ffc3001465d100d3dfc500c848e02b98ebc30028f0c500",
+                        "label": "Hero_ROOT"
+                    }
+                }
+            ]
+        }
+    },
+    "appendix_version": 1,
+    "appendix_count": 2,
+    "appendix_elements": [
+        "EFF_Ani_Saw_Pull_01",
+        "EFF_Ani_Saw_Push_01"
+    ]
+}

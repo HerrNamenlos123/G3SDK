@@ -11,7 +11,8 @@ class GenomeBone:
         self.name = None
         self.resting_pos = None
         self.resting_rot = None
-        self.keyframes = []
+        self.rotation_keyframes = []
+        self.position_keyframes = []
 
 GenomeBones = []
 def getGenomeBone(name):
@@ -24,8 +25,15 @@ def calculate_local_matrix(bone):
     if bone is None:
         return Matrix.Identity(4)
           
-    vec = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2]))
-    quat = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
+    if bone.genome_vec:
+        vec = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2]))
+    else:
+        vec = Vector((0, 0, 0))
+        
+    if bone.genome_quat:
+        quat = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
+    else:
+        quat = Quaternion((1, 0, 0, 0))
     
     local_matrix = quat.to_matrix().to_4x4()
     local_matrix.translation = vec / 100
@@ -42,6 +50,8 @@ class BoneNode:
         self.children = []
         self.name = None
         self.parent = None
+        self.genome_resting_vec = None
+        self.genome_resting_quat = None
         self.genome_vec = None
         self.genome_quat = None
         self.genomeBone = None
@@ -55,15 +65,40 @@ class BoneNode:
         posebone = bones.get(self.name)
         if self.startpose_matrix:
             posebone.matrix_basis = self.startpose_matrix
-        #posebone.keyframe_insert(data_path="matrix", frame=0)
+        posebone.keyframe_insert(data_path="location", frame=0)
+        posebone.keyframe_insert(data_path="rotation_quaternion", frame=0)
+        '''
+        posebone.matrix_basis = Matrix.Identity(4)
+        posebone.keyframe_insert(data_path="location", frame=0)
+        posebone.keyframe_insert(data_path="rotation_quaternion", frame=0)
+        if self.startpose_matrix:
+            posebone.matrix_basis = self.startpose_matrix
+        posebone.keyframe_insert(data_path="location", frame=500)
+        posebone.keyframe_insert(data_path="rotation_quaternion", frame=500)
+        bpy.context.scene.frame_end = 500
+        A'''
         
         if self.genomeBone:
-            for f in self.genomeBone.keyframes:
+            for f in self.genomeBone.rotation_keyframes:
                 framenum = round(f.time / FRAMETIME)
                 if (framenum > bpy.context.scene.frame_end):
                     bpy.context.scene.frame_end = framenum
-                #posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
-                #posebone.keyframe_insert(data_path="matrix", frame=framenum)
+                
+                if f.rotation:
+                    self.genome_quat = f.rotation
+                    posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
+                    posebone.keyframe_insert(data_path="rotation_quaternion", frame=framenum)
+        
+        if self.genomeBone:
+            for f in self.genomeBone.position_keyframes:
+                framenum = round(f.time / FRAMETIME)
+                if (framenum > bpy.context.scene.frame_end):
+                    bpy.context.scene.frame_end = framenum
+                
+                if f.position:
+                    self.genome_vec = f.position
+                    posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
+                    posebone.keyframe_insert(data_path="location", frame=framenum)
         
         for child in self.children:
             child.apply(bones)
@@ -85,6 +120,8 @@ def build_bone_tree(bone, editbone, parent = None):
     if genomeBone:
         bone.genome_quat = genomeBone.resting_rot
         bone.genome_vec = genomeBone.resting_pos
+        bone.genome_resting_vec = bone.genome_vec
+        bone.genome_resting_rot = bone.genome_quat
         bone.genomeBone = genomeBone
         bone.startpose_matrix = bone.resting_diff_inv @ calculate_local_matrix(bone)
     else:
@@ -122,14 +159,14 @@ def do():
                     frame = Frame()
                     frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
                     frame.rotation = chunk["chunk_content"]["keyframes"][i]["rotation"]
-                    bone.keyframes.append(frame)
+                    bone.rotation_keyframes.append(frame)
             elif chunk["chunk_content"]["frame_type"] == "LP":        # Position asset
                 bone = GenomeBones[-1]
                 for i in range(chunk["chunk_content"]["frame_count"]):
                     frame = Frame()
                     frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
-                    frame.rotation = chunk["chunk_content"]["keyframes"][i]["position"]
-                    bone.keyframes.append(frame)
+                    frame.position = chunk["chunk_content"]["keyframes"][i]["position"]
+                    bone.position_keyframes.append(frame)
         else: # A MotionPart: Create a new bone
             bone = GenomeBone()
             bone.name = chunk["chunk_content"]["label"]

@@ -4,6 +4,20 @@ import io
 import json
 import random
 
+# Every animation must contain at least one MotionPart Chunk and one Animation Chunk
+# with at least two animation keyframes, one of which not being at time 0.
+# The Appendix at the end of the file (e.g. ["EFF_Ani_Saw_Pull_01", "EFF_Ani_Saw_Push_01"])
+# is for EFFects such as particles and sound effects. It is not tied to the animation itself. 
+# For example the particles when sawing a log only appear when this label is added. Otherwise,
+# the animation plays without particles and sound. The particles appear roughly half a second
+# after the animation started. If the animation is longer, the particles appear after that time
+# and only reappear after the animation restarts. If the animation is shorter, they don't appear
+# at all.
+#
+# So: A minimal animation must contain at least one MotionPart for defining "Hero_ROOT" (or the hero will fly off into space ???)
+# and one MotionPart and Animation Chunk for one bone with at least two animation frames.
+# The longest animation frame defines the total length of the animation.
+
 os.system("cls")
 
 # def write_file(self, filename):
@@ -19,7 +33,7 @@ os.system("cls")
 # xmot_file = "dragon2/Dragon_Stand_None_Cast_P0_Cast_Raise_N_Fwd_00_%_00_P0_0.xmot"
 # xmot_file = "Hero_Parade_None_1H_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
 # xmot_file = "Hero_Parade_None_Fist_P0_Move_Walk_N_Fwd_00_%_00_P0_350.xmot"
-# xmot_file = "Hero_Parade_1H_1H_P1_PierceAttack_Hit_N_Fwd_00_%_00_P1_50_F.xmot"
+#xmot_file = "Hero_Parade_1H_1H_P1_PierceAttack_Hit_N_Fwd_00_%_00_P1_50_F.xmot"
 # xmot_file = "Hero_Parade_1H_1H_P0_PierceAttack_Raise_N_Fwd_00_%_00_P0_0_F.xmot"
 # xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Ambient_N_Fwd_00_%_00_P0_0.xmot"
 
@@ -56,7 +70,11 @@ with io.open(xmot_file, "rb") as f:
 # x.data["assets"][4]["vec2"] = [ 4, 5, 6 ]
 # x.data["assets"][4]["vec3"] = [ 7, 8, 9, 10 ]
 
+rem = data["content"]["lma_file"]["chunks"][0]["chunk_content"]["remaining"]
+pad = data["content"]["lma_file"]["chunks"][6]["chunk_content"]["ll_padding"]
 
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     del data["content"]["lma_file"]["chunks"][-1]
 
 # for chunk in data["content"]["lma_file"]["chunks"]:
 #     if chunk["chunk_type"] == "MotionPart":
@@ -105,6 +123,41 @@ with io.open(xmot_file, "rb") as f:
 #             if "Layer_" in chunk["chunk_content"]["label"]:
 #                 del data["content"]["lma_file"]["chunks"][i]
 #                 break
+    
+# Remove all animation frames except the first
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     chunk = data["content"]["lma_file"]["chunks"][i]
+#     if chunk["chunk_type"] == "Animation":
+#         while len(chunk["chunk_content"]["keyframes"]) > 2:
+#             chunk["chunk_content"]["keyframes"].pop()
+#         chunk["chunk_content"]["frame_count"] = 2
+#         chunk["chunk_content"]["keyframes"][0]["time"] = 0
+#         chunk["chunk_content"]["keyframes"][1]["time"] = 2
+
+# for i in range(8):
+#     data["content"]["lma_file"]["chunks"].pop(0)
+
+# for y in range(1, 500):
+#     for i in range(len(data["content"]["lma_file"]["chunks"])):
+#         chunk = data["content"]["lma_file"]["chunks"][i]
+#         if chunk["chunk_type"] == "MotionPart":
+#             if "Right" in chunk["chunk_content"]["label"] or "Left" in chunk["chunk_content"]["label"]:
+#                 if data["content"]["lma_file"]["chunks"][i+2]["chunk_type"] == "Animation":
+#                     data["content"]["lma_file"]["chunks"].pop(i+2)
+#                 if data["content"]["lma_file"]["chunks"][i+1]["chunk_type"] == "Animation":
+#                     data["content"]["lma_file"]["chunks"].pop(i+1)
+#                 data["content"]["lma_file"]["chunks"].pop(i)
+#                 break
+
+# for i in range(18):
+#     data["content"]["lma_file"]["chunks"].pop(0)
+
+# data["content"]["lma_file"]["chunks"].pop(2)
+# data["content"]["lma_file"]["chunks"].pop(3)
+# data["content"]["lma_file"]["chunks"].pop(2)
+
+# while len(data["content"]["lma_file"]["chunks"]) > 2:
+#     data["content"]["lma_file"]["chunks"].pop()
 
 # o = {
 #                     "chunk_type": "MotionPart",
@@ -127,12 +180,74 @@ with io.open(xmot_file, "rb") as f:
 #                             1.0
 #                         ],
 #                         "remaining": rem,
-#                         "label": "Hero_Spine_Spine_ROOT"
+#                         "label": "Hero_ROOT"
 #                     }
 #                 }
 
 # print(o)
 # data["content"]["lma_file"]["chunks"].append(o)
+# data["content"]["lma_file"]["chunks"].append({
+#                     "chunk_type": "MotionPart",
+#                     "chunk_version": 3,
+#                     "chunk_content": {
+#                         "position": [
+#                             0,
+#                             0,
+#                             0
+#                         ],
+#                         "rotation": [
+#                             0.0,
+#                             0.0,
+#                             0.0,
+#                             1.0,
+#                         ],
+#                         "scale": [
+#                             1.0,
+#                             1.0,
+#                             1.0
+#                         ],
+#                         "remaining": rem,
+#                         "label": "Hero_Spine_Spine_1"
+#                     }
+#                 })
+# data["content"]["lma_file"]["chunks"].append({
+#     "chunk_type": "Animation",
+#     "chunk_version": 1,
+#     "chunk_content": {
+#         "frame_type": "LP",
+#         "frame_count": 2,
+#         "ll_padding": pad,
+#         "keyframes": [
+#             {
+#                 "time": 0,
+#                 "position": [ 0, 0, 0 ]
+#             },
+#             {
+#                 "time": 5,
+#                 "position": [ 5, 5, 5 ]
+#             }
+#         ]
+#     }
+# })
+# data["content"]["lma_file"]["chunks"].append({
+#     "chunk_type": "Animation",
+#     "chunk_version": 1,
+#     "chunk_content": {
+#         "frame_type": "LR",
+#         "frame_count": 2,
+#         "ll_padding": pad,
+#         "keyframes": [
+#             {
+#                 "time": 0,
+#                 "rotation": [ 0, 0, 0, 1 ]
+#             },
+#             {
+#                 "time": 5,
+#                 "rotation": [ 0, 1, 0, 0 ]
+#             },
+#         ]
+#     }
+# })
 
 with io.open("xmot.json", "w") as f:
     f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
