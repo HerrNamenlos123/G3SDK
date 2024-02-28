@@ -38,6 +38,7 @@ os.system("cls")
 # xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Ambient_N_Fwd_00_%_00_P0_0.xmot"
 
 # xmot_file = "Hero_Stand_None_None_P0_Ambient_Loop_N_Fwd_02_%_00_P0_0.xmot"
+#xmot_file = "Hero_Stand_None_Smoke_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
 
 xmot_file = "Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot" # < This one works
 
@@ -80,15 +81,6 @@ pad = data["content"]["lma_file"]["chunks"][6]["chunk_content"]["ll_padding"]
 #     if chunk["chunk_type"] == "MotionPart":
 #         if chunk["chunk_content"]["label"] == "Hero_Spine_Spine_1":
 #             chunk["chunk_content"]["position"] = [ 0, 0, 0 ]
-
-# rem = {}
-# # Delete the chunk after Hero_Spine_Spine_1
-# for i in range(len(data["content"]["lma_file"]["chunks"])):
-#     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
-#         rem = data["content"]["lma_file"]["chunks"][i]["chunk_content"]["remaining"]
-#         if data["content"]["lma_file"]["chunks"][i]["chunk_content"]["label"] == "Hero_Spine_Spine_1":
-#             del data["content"]["lma_file"]["chunks"][i+1]
-#             break
 
 # for i in range(len(data["content"]["lma_file"]["chunks"])):
 #     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
@@ -134,6 +126,12 @@ pad = data["content"]["lma_file"]["chunks"][6]["chunk_content"]["ll_padding"]
 #         chunk["chunk_content"]["keyframes"][0]["time"] = 0
 #         chunk["chunk_content"]["keyframes"][1]["time"] = 2
 
+# for i in range(len(data["content"]["lma_file"]["chunks"])):
+#     if data["content"]["lma_file"]["chunks"][i]["chunk_type"] == "MotionPart":
+#         if data["content"]["lma_file"]["chunks"][i]["chunk_content"]["label"] == "Hero_Right_Leg_Leg_1":
+#             for f in data["content"]["lma_file"]["chunks"][i+1]["chunk_content"]["keyframes"]:
+#                 f["rotation"] = [ 0.914, 0.38, 0.052, -0.13 ]
+
 # for i in range(8):
 #     data["content"]["lma_file"]["chunks"].pop(0)
 
@@ -155,61 +153,40 @@ pad = data["content"]["lma_file"]["chunks"][6]["chunk_content"]["ll_padding"]
 # data["content"]["lma_file"]["chunks"].pop(2)
 # data["content"]["lma_file"]["chunks"].pop(3)
 # data["content"]["lma_file"]["chunks"].pop(2)
+    
+data["content"]["lma_file"]["chunks"] = []
 
-# while len(data["content"]["lma_file"]["chunks"]) > 2:
-#     data["content"]["lma_file"]["chunks"].pop()
+def appendMotionPart(position, rotation, scale, label):
+    data["content"]["lma_file"]["chunks"].append({
+                    "chunk_type": "MotionPart",
+                    "chunk_version": 3,
+                    "chunk_content": {
+                        "position": [
+                            position[0],
+                            position[1],
+                            position[2]
+                        ],
+                        "rotation": [
+                            rotation[0],
+                            rotation[1],
+                            rotation[2],
+                            rotation[3],
+                        ],
+                        "scale": [
+                            scale[0],
+                            scale[1],
+                            scale[2]
+                        ],
+                        "remaining": rem,
+                        "label": label
+                    }
+                })
 
-# o = {
-#                     "chunk_type": "MotionPart",
-#                     "chunk_version": 3,
-#                     "chunk_content": {
-#                         "position": [
-#                             2,
-#                             2,
-#                             2
-#                         ],
-#                         "rotation": [
-#                             0.0,
-#                             0.0,
-#                             0.0,
-#                             0.0,
-#                         ],
-#                         "scale": [
-#                             1.0,
-#                             1.0,
-#                             1.0
-#                         ],
-#                         "remaining": rem,
-#                         "label": "Hero_ROOT"
-#                     }
-#                 }
-
-# print(o)
-# data["content"]["lma_file"]["chunks"].append(o)
-# data["content"]["lma_file"]["chunks"].append({
-#                     "chunk_type": "MotionPart",
-#                     "chunk_version": 3,
-#                     "chunk_content": {
-#                         "position": [
-#                             0,
-#                             0,
-#                             0
-#                         ],
-#                         "rotation": [
-#                             0.0,
-#                             0.0,
-#                             0.0,
-#                             1.0,
-#                         ],
-#                         "scale": [
-#                             1.0,
-#                             1.0,
-#                             1.0
-#                         ],
-#                         "remaining": rem,
-#                         "label": "Hero_Spine_Spine_1"
-#                     }
-#                 })
+appendMotionPart((0, 0, 0), (0, 1, 0, 0), (1, 1, 1), "Hero_ROOT")
+# appendMotionPart((0, 1000, 0), (1, 0, 0, 0), (1, 1, 1), "Hero_Spine_Spine_ROOT")
+appendMotionPart((0, 0, 0), (0, 1, 0, 0), (1, 1, 1), "Hero_Spine_Spine_1")
+#appendMotionPart((0, 0, 0), (0, 0, 0, 1), (1, 1, 1), "Hero_Spine_Spine_1")
+appendMotionPart((0, 0, 0), (0, 0, 0, 1), (1, 1, 1), "Hero_Head_Neck_ROOT")
 # data["content"]["lma_file"]["chunks"].append({
 #     "chunk_type": "Animation",
 #     "chunk_version": 1,
@@ -224,32 +201,36 @@ pad = data["content"]["lma_file"]["chunks"][6]["chunk_content"]["ll_padding"]
 #             },
 #             {
 #                 "time": 5,
-#                 "position": [ 5, 5, 5 ]
+#                 "position": [ 100, 100, 100 ]
 #             }
 #         ]
 #     }
 # })
-# data["content"]["lma_file"]["chunks"].append({
-#     "chunk_type": "Animation",
-#     "chunk_version": 1,
-#     "chunk_content": {
-#         "frame_type": "LR",
-#         "frame_count": 2,
-#         "ll_padding": pad,
-#         "keyframes": [
-#             {
-#                 "time": 0,
-#                 "rotation": [ 0, 0, 0, 1 ]
-#             },
-#             {
-#                 "time": 5,
-#                 "rotation": [ 0, 1, 0, 0 ]
-#             },
-#         ]
-#     }
-# })
+data["content"]["lma_file"]["chunks"].append({
+    "chunk_type": "Animation",
+    "chunk_version": 1,
+    "chunk_content": {
+        "frame_type": "LR",
+        "frame_count": 2,
+        "ll_padding": pad,
+        "keyframes": [
+            {
+                "time": 0,
+                "rotation": [ 0, 0, 0, 1 ]
+            },
+            {
+                "time": 2,
+                "rotation": [ 0, 1, 0, 0 ]
+            },
+            {
+                "time": 4,
+                "rotation": [ 0, 0, 0, 1 ]
+            },
+        ]
+    }
+})
 
-with io.open("xmot.json", "w") as f:
+with io.open("xmot-edit.json", "w") as f:
     f.write(json.dumps(data, indent=4, cls=xmot.XMotEncoder))
 
 
