@@ -444,7 +444,21 @@ def calculate_local_matrix(bone):
         local_resting_matrix = bone.global_resting_matrix
         trans = local_resting_matrix.translation
         rot = local_resting_matrix.to_3x3().to_quaternion()
+
+    if bone.genome_quat:
+        rot = Quaternion((-bone.genome_quat[3], bone.genome_quat[0], bone.genome_quat[2], bone.genome_quat[1]))
+    else:
+        rot = Quaternion((1, 0, 0, 0))
+
+    if bone.genome_vec:
+        trans = Vector((bone.genome_vec[0], bone.genome_vec[2], bone.genome_vec[1])) / 100
+    else:
+        trans = Vector((0, 0, 0))
         
+    boneOrientationFix = mathutils.Matrix(((0,1,0,0),(-1,0,0,0),(0,0,1,0),(0,0,0,1)))
+    local_matrix = Matrix.LocRotScale(trans, rot, None)
+    local_matrix = boneOrientationFix.inverted() @ local_matrix @ boneOrientationFix
+    return local_matrix
     '''
     parentcount = 0
 
@@ -541,7 +555,7 @@ class BoneNode:
         posebone.keyframe_insert(data_path="location", frame=500)
         posebone.keyframe_insert(data_path="rotation_quaternion", frame=500)
         bpy.context.scene.frame_end = 500
-        '''
+        
         '''
         if self.genomeBone:
             for f in self.genomeBone.rotation_keyframes:
@@ -564,7 +578,7 @@ class BoneNode:
                     self.genome_vec = f.position
                     posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
                     posebone.keyframe_insert(data_path="location", frame=framenum)
-        '''
+        
         for child in self.children:
             child.apply(bones)
     
@@ -685,6 +699,14 @@ def do():
     root.apply(obj.pose.bones)
 
     bpy.ops.object.mode_set(mode='OBJECT')
+    
+    # Set display mode to Material Preview
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for space in area.spaces:
+                if space.type == 'VIEW_3D':
+                    space.shading.type = 'MATERIAL'
+                    break
 
 class ImportCustomFileOperator(bpy.types.Operator):
     """Import Custom File Format"""
