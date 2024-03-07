@@ -459,60 +459,6 @@ def calculate_local_matrix(bone):
     local_matrix = Matrix.LocRotScale(trans, rot, None)
     local_matrix = boneOrientationFix.inverted() @ local_matrix @ boneOrientationFix
     return local_matrix
-    '''
-    parentcount = 0
-
-    bb = bone
-    for i in range(parentcount):
-        if bb.name == "Hero_ROOT":
-            print(bone.name)
-            if bone.genome_vec:
-                trans = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2])) / 100
-            if bone.genome_quat:
-                rot = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
-            break
-        bb = bb.parent
-
-    if bone.genome_quat:
-        rot = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
-    else:
-        rot = Quaternion((1, 0, 0, 0))
-
-    if bone.genome_vec:
-        trans = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2])) / 100
-    else:
-        trans = Vector((0, 0, 0))
-    
-    return Matrix.LocRotScale(trans, rot, None)
-        '''
-        
-    #bone.genome_vec = None
-    #bone.genome_quat = None
-    
-    #if bone.name == "Hero_ROOT":
-    #    print(rot)
-        #bone.genome_quat = Quaternion((0, 0, 1, 0))
-    #    pass
-    
-    #if bone.name == "Hero_Spine_Spine_ROOT":
-    #    print(rot)
-    #    bone.genome_vec = Vector((0, 0, 0))
-    #    bone.genome_quat = Quaternion((0, 0, 1, 0))
-    #    pass
-          
-    #if bone.genome_vec:
-    #    trans = Vector((bone.genome_vec[1], bone.genome_vec[0], bone.genome_vec[2])) / 100
-    #else:
-    #    trans = Vector((0, 0, 0))
-        
-    #if bone.genome_quat:
-    #    rot = Quaternion((-bone.genome_quat[3], bone.genome_quat[1], bone.genome_quat[0], bone.genome_quat[2]))
-    #else:
-    #    rot = Quaternion((1, 0, 0, 0))
-        
-    local_matrix = rot.to_matrix().to_4x4()
-    local_matrix.translation = trans
-    return local_matrix
 
 class Frame:
     def __init__(self):
@@ -587,11 +533,12 @@ def build_bone_tree(bone, editbone, parent = None):
     bone.parent = parent
     bone.global_resting_matrix = editbone.matrix
     
+    boneOrientationFix = mathutils.Matrix(((0,1,0,0),(-1,0,0,0),(0,0,1,0),(0,0,0,1)))
     genomeBone = getGenomeBone(bone.name)
     if bone.parent:
         bone.resting_diff_inv = (bone.parent.global_resting_matrix.inverted() @ bone.global_resting_matrix).inverted()
     else:
-        bone.resting_diff_inv = Matrix.Identity(4)
+        bone.resting_diff_inv = bone.global_resting_matrix.inverted() @ boneOrientationFix
         
     #if bone.root_matrix:
     #    bone.resting_diff_inv = bone.root_matrix @ bone.resting_diff_inv
