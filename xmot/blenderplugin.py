@@ -666,8 +666,6 @@ def do():
                     space.shading.type = 'MATERIAL'
                     break
 
-do()
-exit()
 class ImportCustomFileOperator(bpy.types.Operator):
     """Import Custom File Format"""
     bl_idname = "import_custom_file.import_file"
