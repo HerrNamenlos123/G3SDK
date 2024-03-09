@@ -1,10 +1,10 @@
-# import bpy
+import bpy
 import math
 import json
-# from mathutils import Quaternion, Vector, Matrix
+from mathutils import Quaternion, Vector, Matrix
 from typing import Optional, Dict, Tuple, Union
 from datetime import datetime, timezone
-# import mathutils
+import mathutils
 
 FRAMETIME = 0.04
 
@@ -238,8 +238,9 @@ class XMot:
             raise RuntimeError("Chunk base function encode is not defined")
 
     class MotionPartChunkV3(Chunk):
+        ID = 1
         def get_id(self) -> int:
-            return 1
+            return self.ID
         
         def get_version(self) -> int:
             return 3
@@ -267,13 +268,14 @@ class XMot:
             file.put_str(self.bone)
 
     class AnimationChunkV1(Chunk):
+        ID = 2
         RESERVED = 0xc6
         def __init__(self):
             self.interpolation_kind: str = ""
             self.frames = []
 
         def get_id(self) -> int:
-            return 2
+            return self.ID
         
         def get_version(self) -> int:
             return 1
@@ -534,8 +536,8 @@ class BoneNode:
                 if (framenum > bpy.context.scene.frame_end):
                     bpy.context.scene.frame_end = framenum
                 
-                if f.position:
-                    self.genome_vec = f.position
+                if f.location:
+                    self.genome_vec = f.location
                     posebone.matrix_basis = self.resting_diff_inv @ calculate_local_matrix(self)
                     posebone.keyframe_insert(data_path="location", frame=framenum)
         
@@ -569,16 +571,14 @@ def build_bone_tree(bone, editbone, parent = None):
         build_bone_tree(bone.children[-1], next, bone)
 
 def do():
-    
+    xmot = XMot()
     xmot_file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\Hero_Stand_None_Tool_P0_SawLog_Loop_N_Fwd_00_%_00_P0_0.xmot"
     # xmot_file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\Hero_Stand_None_Smoke_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
     # xmot_file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\Hero_Stand_None_Tool_P0_SawLog_Ambient_N_Fwd_00_%_00_P0_0.xmot"
     # xmot_file = "C:\\Users\\zachs\\Downloads\\_compiledAnimation\\Hero_SitThrone_None_Smoke_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
     # xmot_file = "C:\\Users\\zachs\\Downloads\\_compiledAnimation\\Hero_Stand_None_Smoke_P0_Ambient_Loop_N_Fwd_00_%_00_P0_0.xmot"
     with open(xmot_file, 'rb') as f:
-        xmot = XMot()
-        data = xmot.decode(f.read())
-    return
+        xmot.decode(f.read())
 
     file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\G3_Hero_Body_Player.3db"
     #file = "C:\\Users\\zachs\\Projects\\G3SDK\\xmot\\G3_Hero_Body_Paladin.3db"
@@ -590,29 +590,24 @@ def do():
     obj = bpy.context.active_object
     if not obj:
         raise Exception("No active object, something must have gone wrong")
-
-    for i in range(len(data['content']['lma_file']['chunks'])):
-        chunk = data['content']['lma_file']['chunks'][i]
-        if chunk["chunk_type"] == "Animation":      # This asset is a frame asset, so we merge it into the last asset, which was a MotionPart
-            if chunk["chunk_content"]["frame_type"] == "LR":          # Rotation asset
+    
+    for i in range(len(xmot.chunks)):
+        chunk = xmot.chunks[i]
+        print(type(chunk))
+        if chunk.get_id() == XMot.AnimationChunkV1.ID:
+            if chunk.interpolation_kind == "R":
                 bone = GenomeBones[-1]
-                for i in range(chunk["chunk_content"]["frame_count"]):
-                    frame = Frame()
-                    frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
-                    frame.rotation = chunk["chunk_content"]["keyframes"][i]["rotation"]
-                    bone.rotation_keyframes.append(frame)
-            elif chunk["chunk_content"]["frame_type"] == "LP":        # Position asset
+                for i in range(len(chunk.frames)):
+                    bone.rotation_keyframes.append(chunk.frames[i])
+            elif chunk.interpolation_kind == "P":
                 bone = GenomeBones[-1]
-                for i in range(chunk["chunk_content"]["frame_count"]):
-                    frame = Frame()
-                    frame.time = chunk["chunk_content"]["keyframes"][i]["time"]
-                    frame.position = chunk["chunk_content"]["keyframes"][i]["position"]
-                    bone.position_keyframes.append(frame)
-        else: # A MotionPart: Create a new bone
+                for i in range(len(chunk.frames)):
+                    bone.position_keyframes.append(chunk.frames[i])
+        elif chunk.get_id() == XMot.MotionPartChunkV3.ID:
             bone = GenomeBone()
-            bone.name = chunk["chunk_content"]["label"]
-            bone.resting_pos = chunk["chunk_content"]["position"]
-            bone.resting_rot = chunk["chunk_content"]["rotation"]
+            bone.name = chunk.bone
+            bone.resting_pos = chunk.pose_location
+            bone.resting_rot = chunk.pose_rotation
             GenomeBones.append(bone)
             
     
