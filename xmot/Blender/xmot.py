@@ -87,9 +87,9 @@
 #  - RepositioningNodeChunkProcessor2       id=14   version=2
 #  - SkinningInfoChunkProcessor1            id=4    version=1
 
-from binaryfile import BinaryFileBuilder, Quat, Vec3
-from filetime import datetime, to_datetime, to_winfiletime
-from chunks import Chunk, create_chunk_processor
+from .binaryfile import BinaryFileBuilder, Quat, Vec3
+from .filetime import datetime, to_datetime, to_winfiletime
+from .chunks import Chunk, create_chunk_processor
 from typing import Optional
 
 GENOMFLE_STR = "GENOMFLE"

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from binaryfile import BinaryFileBuilder, Quat, Vec3
+from .binaryfile import BinaryFileBuilder, Quat, Vec3
 from typing import List, Any
 
 class Chunk(ABC):
