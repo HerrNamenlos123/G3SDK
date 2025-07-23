@@ -26,6 +26,10 @@ Microsoft Detours library is used to redirect any function call between DLL boun
 
 You will need these function signatures in order to hook into these functions in C++.
 
+## Other library
+
+Also take a look at https://github.com/HerrNamenlos123/GenomeScript. It has the same goal of quickly iterating with function detouring, but it implements it via hot-reloaded lua scripts and it is a much more elaborate attempt that got further than this repository.
+
 ## Ghidra
 
 Here is also a `ghidra` subfolder, which contains a Ghidra project. I put in a lot of effort to decompile the original Gothic 3 DLLs. My main target were classes such as PS_Animation and anything animation related, as well as a bit of the entity component system and general data types such as BCString.
